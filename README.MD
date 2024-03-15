@@ -14,7 +14,7 @@
 |         |                                                                            |           |         |
 | 10.     | Two Factor Authentication                                                  | ✓         |         |
 | 11.     | Forgot Password Functionality                                              | ✓         |         |
-| 12.     | Create Main Page Template                                                  |           | ✓       |
+| 12.     | Create Main Page Template                                                  | ✓         |         |
 |         |                                                                            |           |         |
 | 13.     | Add Icons to the Pages Buttons on the Main Page - Home, Profile & Settings |           |         |
 | 14.     | View Budgets                                                               | ✓         |         |
@@ -40,3 +40,4 @@
 | 31.     | Custom File Format (.swf)                                                  |           |         |
 | 32.     | Import from .swf                                                           |           |         |
 | 33.     | Export to .swf                                                             |           |         |
+| 34.     | Integrate Integrate MainPage after Login                                   |           |         |
