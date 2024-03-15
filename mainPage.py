@@ -35,18 +35,39 @@ class NavigationFrame(CTk.CTkFrame):
     def __init__(self, master, width: int, height: int, button_callback):
         super().__init__(master, width, height)
 
-        self.title = CTk.CTkLabel(self, text='Navigation Menu', font=('Kameron', 25, "bold"), width=230, height=40, justify='center')
+        # Images
+        image_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "assets")
+
+        navigation_light = Image.open(os.path.join(image_path, "menu-burger_light.png"))
+        navigation_dark = Image.open(os.path.join(image_path, "menu-burger_dark.png"))
+
+        settings_light = Image.open(os.path.join(image_path, "settings_light.png"))
+        settings_dark = Image.open(os.path.join(image_path, "settings_dark.png"))
+
+        home_light = Image.open(os.path.join(image_path, "home_light.png"))
+        home_dark = Image.open(os.path.join(image_path, "home_dark.png"))
+
+        profile_light = Image.open(os.path.join(image_path, "user_light.png"))
+        profile_dark = Image.open(os.path.join(image_path, "user_dark.png"))
+
+        self.navigationImg = CTk.CTkImage(light_image=navigation_light, dark_image=navigation_dark, size=(20, 20))
+        self.homeImg = CTk.CTkImage(light_image=home_light, dark_image=home_dark, size=(20, 20))
+        self.profileImg = CTk.CTkImage(light_image=profile_light, dark_image=profile_dark, size=(20, 20))
+        self.settingsImg = CTk.CTkImage(light_image=settings_light, dark_image=settings_dark, size=(20, 20))
+        
+        #===============================
+        self.title = CTk.CTkLabel(self, text='  Navigation Menu', font=('Kameron', 22, "bold"), width=230, height=40, image=self.navigationImg, compound='left')
         self.title.place(x=10, y=0)
 
         self.page = 'settings'
 
-        self.home_btn = CTk.CTkButton(self, width=230, height=40, border_spacing=10, font=('Kameron', 20,), text="Home", fg_color="transparent", text_color=("gray10", "gray90"), hover_color=("gray70", "gray30"), anchor="w", command=lambda: self.button_pressed("home"))
+        self.home_btn = CTk.CTkButton(self, width=230, height=40, border_spacing=10, font=('Kameron', 20,), text="  Home", fg_color="transparent", text_color=("gray10", "gray90"), hover_color=("gray70", "gray30"), anchor="w", command=lambda: self.button_pressed("home"), image=self.homeImg)
         self.home_btn.place(x=10, y=60)
 
-        self.profile_btn = CTk.CTkButton(self, width=230, height=40, border_spacing=10, font=('Kameron', 20,), text="Profile", fg_color="transparent", text_color=("gray10", "gray90"), hover_color=("gray70", "gray30"), anchor="w", command=lambda: self.button_pressed("profile"))
+        self.profile_btn = CTk.CTkButton(self, width=230, height=40, border_spacing=10, font=('Kameron', 20,), text="   Profile", fg_color="transparent", text_color=("gray10", "gray90"), hover_color=("gray70", "gray30"), anchor="w", command=lambda: self.button_pressed("profile"), image=self.profileImg)
         self.profile_btn.place(x=10, y=110)
 
-        self.settings_btn = CTk.CTkButton(self, width=230, height=40, border_spacing=10, font=('Kameron', 20,), text="Settings", fg_color="transparent", text_color=("gray10", "gray90"), hover_color=("gray70", "gray30"), anchor="w", command=lambda: self.button_pressed("settings"))
+        self.settings_btn = CTk.CTkButton(self, width=230, height=40, border_spacing=10, font=('Kameron', 20,), text="  Settings", fg_color="transparent", text_color=("gray10", "gray90"), hover_color=("gray70", "gray30"), anchor="w", command=lambda: self.button_pressed("settings"), image=self.settingsImg)
         self.settings_btn.place(x=10, y=420)
 
         self.button_callback = button_callback
@@ -255,7 +276,10 @@ class HomeFrame(CTk.CTkFrame): #(680x480+285+105)
                 self.budget_card = self.budgetCard(self.BsFra, 305, 150, budget_amount, budget_status, budget_name, row_num, col_num, budget_id)
                 self.setBudgetStatus(budget_id)
 
+                calculation = (budget_status/budget_amount) * 100
+
                 self.set_budget_info(budget_id, user_id, budget_category, budget_status)
+                self.progressColors(calculation)
             
         except sqlite3.Error as e:
             messagebox.showerror("SQLite Error", f"{e}")
@@ -295,12 +319,6 @@ class HomeFrame(CTk.CTkFrame): #(680x480+285+105)
         percentage = self.add_zero(unformateed_percentage)
 
         progress = round(unformateed_percentage / 100, 2)
-
-        """
-        Default :- #1f538d
-        Yellow :- #8d801f
-        Red :- #8d1f1f
-        """
 
         self.progressVar = IntVar()
         self.toplevel_window = None
@@ -468,6 +486,17 @@ class HomeFrame(CTk.CTkFrame): #(680x480+285+105)
 
         return count > 0
 
+    def progressColors(self, budget_used):
+        if budget_used < 60 or budget_used == 60:
+            self.progress.configure(progress_color='#1f538d')
+            # print('<60%')
+        elif budget_used > 60 and budget_used < 90:
+            self.progress.configure(progress_color='#8d801f')
+            # print('60% - 90%')
+        else:
+            self.progress.configure(progress_color='#8d1f1f')
+            # print('>90%')
+
     # Add Functions
     def addBudget(self):
         user_id = self.user_id
@@ -517,9 +546,6 @@ class HomeFrame(CTk.CTkFrame): #(680x480+285+105)
         finally:
             if conn:
                 conn.close()
-
-        
-
 
     # Budget Card Functions
     def refresh(self, budget_id):
@@ -621,7 +647,6 @@ class HomeFrame(CTk.CTkFrame): #(680x480+285+105)
             return "0" + str(number)
         else:
             return str(number)
-
 
 class ProfileFrame(CTk.CTkFrame): #(680x480+285+105)
     def __init__(self, master, width: int, height: int):
