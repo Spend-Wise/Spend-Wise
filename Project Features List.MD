@@ -36,3 +36,8 @@
 | 32.     | Import from .swf                                                           |           |         |
 | 33.     | Export to .swf                                                             |           |         |
 | 34.     | Integrate Integrate MainPage after Login                                   |           |         |
+| 35.     | Add Fields to the Database                                   |           |         |
+| 36.     | Implement the added Fields in the Table                                   |           |         |
+| 37.     | Expense Details                                   |           |         |
+| 38.     |                                    |           |         |
+| 39.     |                                    |           |         |
