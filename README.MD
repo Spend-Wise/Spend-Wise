@@ -11,11 +11,9 @@
 | 7.      | Do it Later for Verfication                                                |           |         |
 | 8.      | Login through Database                                                     | ✓         |         |
 | 9.      | Remove User Id Dependency while Login in                                   |           |         |
-|         |                                                                            |           |         |
 | 10.     | Two Factor Authentication                                                  | ✓         |         |
 | 11.     | Forgot Password Functionality                                              | ✓         |         |
-| 12.     | Create Main Page Template                                                  | ✓         |         |
-|         |                                                                            |           |         |
+| 12.     | Create Main Page Template                                                  | ✓         | ✓         |
 | 13.     | Add Icons to the Pages Buttons on the Main Page - Home, Profile & Settings |           |         |
 | 14.     | View Budgets                                                               | ✓         |         |
 | 15.     | Show Budget Name, Amount & Budget Used                                     | ✓         |         |
@@ -28,15 +26,12 @@
 | 22.     | Expenses Table with Styling                                                | ✓         |         |
 | 23.     | Expense Details                                                            |           |         |
 | 24.     | Budget Details                                                             |           |         |
-|         |                                                                            |           |         |
 | 25.     | Add Budgets                                                                | ✓         |         |
-| 26.     | Add Expenses                                                               |           |         |
-| 27.     | Expense Adding Restrictions                                                |           |         |
-|         |                                                                            |           |         |
+| 26.     | Add Expenses                                                               | ✓          |         |
+| 27.     | Expense Adding Restrictions                                                | ✓          |         |
 | 28.     | Database Structure Security - Backend                                      | ✓         |         |
 | 29.     | Database Structure System - GUI                                            | ✓         |         |
 | 30.     | Database Backup System                                                     |           |         |
-|         |                                                                            |           |         |
 | 31.     | Custom File Format (.swf)                                                  |           |         |
 | 32.     | Import from .swf                                                           |           |         |
 | 33.     | Export to .swf                                                             |           |         |

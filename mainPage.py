@@ -215,7 +215,7 @@ class HomeFrame(CTk.CTkFrame): #(680x480+285+105)
         self.sd = CTkScrollableDropdownFrame(self.budEnt, values=self.budgets, justify="left", button_color="transparent", autocomplete=True)
 
         # Button
-        self.addButton = CTk.CTkButton(self.addExpFrame, text='Add Expense', font=('Kameron', 17), width=280)
+        self.addButton = CTk.CTkButton(self.addExpFrame, text='Add Expense', font=('Kameron', 17), width=280, command=self.budgetCheck)
         self.addButton.place(x=15, y=175)
 
         EntryPlaceholderManager(self.nameEnt, 'Expense Name')
@@ -387,6 +387,87 @@ class HomeFrame(CTk.CTkFrame): #(680x480+285+105)
             if conn:
                 conn.close()
 
+    def getSelectedBudget(self, user_id):
+        selected_budget_name = self.budEnt.get()
+
+        try:
+            conn = sqlite3.connect(DATABASE)
+            cursor = conn.cursor()
+
+            cursor.execute("SELECT budget_id, budget_name FROM budget WHERE user_id = ?", (user_id,))
+            budgets = cursor.fetchall()
+
+            for tuple_item in budgets:
+                name = tuple_item[1]
+                if name == selected_budget_name:
+                    budget_id = tuple_item[0]
+                    return selected_budget_name, budget_id
+            
+        except sqlite3.Error as e:
+            messagebox.showerror("SQLite Error", f"{e}")
+
+        finally:
+            if conn:
+                conn.close()
+    
+    def budgetCheck(self):
+        budget = self.getSelectedBudget(self.user_id)
+
+        if budget is not None and isinstance(budget, tuple) and len(budget) == 2:
+            budname, budid = budget
+
+            self.budid = budid
+            self.budname = budname
+
+            # print(self.budid, self.budname)
+
+        name = self.expNameVar.get()
+        amount = self.expAmountVar.get()
+
+        try:
+            conn = sqlite3.connect(DATABASE)
+            cursor = conn.cursor()
+
+            # Get Used Budget
+            cursor.execute("SELECT budget_amount, budget_status FROM budget WHERE budget_id = ?", (self.budid,))
+            result = cursor.fetchone()
+
+            if result:
+                budamount, used = result
+
+                self.leftBudget = budamount - used
+                
+            if amount > self.leftBudget:
+                messagebox.showerror('Budget Not Available', 'Your are Exceeding your budget limit.')
+
+            if amount < self.leftBudget:
+                self.addExpense(self.budid, name, amount)
+
+            if amount == self.leftBudget:
+                veri = messagebox.askyesnocancel('Budget Limit', 'If you add this expense your budget will be over are you sure you want to add this budget.')
+                if veri == True:
+                    print('added')
+                if veri == False or veri == None:
+                    pass
+
+        except sqlite3.Error as e:
+            messagebox.showerror("SQLite Error", f"{e}")
+
+        finally:
+            if conn:
+                conn.close()
+   
+    def checkIDExists(self, id_to_check):
+        conn = sqlite3.connect('spendwise.db')
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT COUNT(*) FROM budget WHERE budget_id = ?", (id_to_check,))
+        count = cursor.fetchone()[0]
+
+        conn.close()
+
+        return count > 0
+
     # Add Functions
     def addBudget(self):
         user_id = self.user_id
@@ -414,8 +495,31 @@ class HomeFrame(CTk.CTkFrame): #(680x480+285+105)
             if conn:
                 conn.close()
 
-    def addExpense(self):
-        pass
+    def addExpense(self, budget_id, name, amount):
+        try:
+            conn = sqlite3.connect(DATABASE)
+            cursor = conn.cursor()
+
+            values = (budget_id, name, amount)
+            
+            if self.checkIDExists(budget_id):
+                cursor.execute(""" INSERT INTO expense (budget_id, expense_name, expense_amount) VALUES (?, ?, ?) """, values)
+                conn.commit()
+
+                messagebox.showinfo('Expense Added', f'Expense of ${amount} has been added to {self.budname}')
+
+                self.refresh(budget_id)
+
+
+        except sqlite3.Error as e:
+            messagebox.showerror("SQLite Error", f"{e}")
+
+        finally:
+            if conn:
+                conn.close()
+
+        
+
 
     # Budget Card Functions
     def refresh(self, budget_id):

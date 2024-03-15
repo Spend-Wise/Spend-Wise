@@ -1,0 +1,7 @@
+/Backups
+/OIF
+/Tests
+/__pycache__
+/CTkScrollableDropdown/__pycache__
+.gitignore
+*.db
