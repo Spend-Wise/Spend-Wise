@@ -633,9 +633,6 @@ class TFA(CTk.CTkToplevel):
         else:
             messagebox.showerror("Authentication Failed", "Invalid OTP. Access denied.")
 
-    
-
-    
 
 def run():
     if __name__ == '__main__':

@@ -3,7 +3,7 @@ CREATE TABLE "registration" (
 	"first_name"	TEXT NOT NULL,
 	"last_name"	TEXT,
 	"email"	TEXT NOT NULL,
-	"username"	TEXT,
+	"username"	TEXT UNIQUE,
 	"password"	TEXT NOT NULL,
 	"sec_que"	TEXT,
 	"sec_que_ans"	TEXT,
@@ -13,5 +13,7 @@ CREATE TABLE "registration" (
 	"user_type"	TEXT NOT NULL DEFAULT 'user',
 	"valid_user"	INTEGER NOT NULL DEFAULT 0,
 	"secret_key"	TEXT,
+	"date"	TEXT,
+	"time"	TEXT,
 	PRIMARY KEY("user_id" AUTOINCREMENT)
 );

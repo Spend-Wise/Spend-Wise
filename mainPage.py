@@ -1,6 +1,8 @@
 # Imports
 
 import os
+import time
+import threading
 
 import sqlite3
 
@@ -11,6 +13,8 @@ from PIL import Image
 from dotenv import load_dotenv
 from tkinter import ttk, messagebox
 from abc import ABC, abstractmethod
+
+from datetime import datetime as dt
 
 from AddPlaceHolder import *
 from CTkTable import *
@@ -25,6 +29,7 @@ CTk.set_default_color_theme("dark-blue")
 
 # Environment Variables
 load_dotenv()
+db_lock = threading.Lock()
 
 DATABASE = os.environ.get("DATABASE")
 EMAIL = os.environ.get("EMAIL")
@@ -224,11 +229,11 @@ class HomeFrame(CTk.CTkFrame): #(680x480+285+105)
         self.expAmount.place(x=15, y=75)
 
         # Entry Fields
-        self.nameEnt = CTk.CTkEntry(self.addExpFrame, width=280, font=('Kameron', 17), textvariable=self.expNameVar)
-        self.nameEnt.place(x=15, y=42)
+        self.enameEnt = CTk.CTkEntry(self.addExpFrame, width=280, font=('Kameron', 17), textvariable=self.expNameVar)
+        self.enameEnt.place(x=15, y=42)
 
-        self.amountEnt = CTk.CTkEntry(self.addExpFrame, width=280, font=('Kameron', 17), textvariable=self.expAmountVar)
-        self.amountEnt.place(x=15, y=102)
+        self.eamountEnt = CTk.CTkEntry(self.addExpFrame, width=280, font=('Kameron', 17), textvariable=self.expAmountVar)
+        self.eamountEnt.place(x=15, y=102)
 
         self.budEnt = CTk.CTkComboBox(self.addExpFrame, width=280, font=('Kameron', 17))
         self.budEnt.place(x=15, y=142)
@@ -239,7 +244,7 @@ class HomeFrame(CTk.CTkFrame): #(680x480+285+105)
         self.addButton = CTk.CTkButton(self.addExpFrame, text='Add Expense', font=('Kameron', 17), width=280, command=self.budgetCheck)
         self.addButton.place(x=15, y=175)
 
-        EntryPlaceholderManager(self.nameEnt, 'Expense Name')
+        EntryPlaceholderManager(self.enameEnt, 'Expense Name')
 
         # Funtion Calls
         self.load_budgetCards(user_id)
@@ -247,7 +252,7 @@ class HomeFrame(CTk.CTkFrame): #(680x480+285+105)
 
     #=================================================================================
     # Get Functions
-
+    
     def load_budgetCards(self, user_id):
         self.user_id = user_id
         try:
@@ -257,32 +262,44 @@ class HomeFrame(CTk.CTkFrame): #(680x480+285+105)
             cursor.execute("SELECT COUNT(*) FROM registration WHERE user_id = ?", (self.user_id,))
             count = cursor.fetchone()[0]
 
+            # print('working #1')
+
             if count == 0:
                 messagebox.showerror("Error", "Invalid budget_id")
+                # print('working #2')
                 return
 
             cursor.execute("SELECT * FROM budget WHERE user_id=?", (self.user_id, ))
             budgets = cursor.fetchall()
 
-            for i, budget_info in enumerate(budgets):
-                budget_id, user_id, budget_name, budget_amount, budget_category, budget_status = budget_info
-                
-                
-                # self.budget_card.refreshButton.configure(command=self.refresh(budget_id))
-                
-                row_num = i // 2  # Two cards per row
-                col_num = i % 2   # 0 or 1 for left or right column
-                
-                self.budget_card = self.budgetCard(self.BsFra, 305, 150, budget_amount, budget_status, budget_name, row_num, col_num, budget_id)
-                self.setBudgetStatus(budget_id)
+            if not budgets:
+                for child in self.BsFra.winfo_children():
+                        # print(self.BsFra.winfo_children())
+                        child.destroy()
+            else:
+                for i, budget_info in enumerate(budgets):
+                    # print(budget_info)
+                    if budget_info:
+                        budget_id, user_id, budget_name, budget_amount, budget_category, budget_status, date, time = budget_info
+                        
+                        # self.budget_card.refreshButton.configure(command=self.refresh(budget_id))
+                    
+                        row_num = i // 2  # Two cards per row
+                        col_num = i % 2   # 0 or 1 for left or right column
+                        
+                        self.budget_card = self.budgetCard(self.BsFra, 305, 150, budget_amount, budget_status, budget_name, row_num, col_num, budget_id)
+                        self.setBudgetStatus(self.user_id, budget_id)
 
-                calculation = (budget_status/budget_amount) * 100
+                        calculation = (budget_status/budget_amount) * 100
 
-                self.set_budget_info(budget_id, user_id, budget_category, budget_status)
-                self.progressColors(calculation)
+                        self.set_budget_info(budget_id, user_id, budget_category, budget_status)
+                        self.progressColors(calculation)
+                    else:
+                        pass  
+                    
             
         except sqlite3.Error as e:
-            messagebox.showerror("SQLite Error", f"{e}")
+            messagebox.showerror("SQLite Error (loadBudgetCards)", f"{e}")
 
         finally:
             if conn:
@@ -314,7 +331,7 @@ class HomeFrame(CTk.CTkFrame): #(680x480+285+105)
         self.refreshImg = CTk.CTkImage(light_image=refresh_light, dark_image=refresh_dark, size=(20, 20))
         self.crossImg = CTk.CTkImage(light_image=cross, dark_image=cross, size=(20, 20))
 
-        calculation = (used/amount) * 100
+        calculation = (int(used)/int(amount)) * 100
         unformateed_percentage = round(calculation, 2)
         percentage = self.add_zero(unformateed_percentage)
 
@@ -346,7 +363,7 @@ class HomeFrame(CTk.CTkFrame): #(680x480+285+105)
         self.refreshButton = CTk.CTkButton(self.BudgetCard, text="", image=self.refreshImg, width=20, height=20, fg_color="transparent", hover_color=("gray70", "gray30"), border_width=1, command=lambda budget_id=budget_id: self.refresh(budget_id))
         self.refreshButton.place(x=220, y=10)
 
-        self.deleteButton = CTk.CTkButton(self.BudgetCard, text="", image=self.crossImg, width=20, height=20, fg_color="transparent", hover_color=("gray70", "#6a0000"), border_width=1, border_color='#FF0000')
+        self.deleteButton = CTk.CTkButton(self.BudgetCard, text="", image=self.crossImg, width=20, height=20, fg_color="transparent", hover_color=("gray70", "#6a0000"), border_width=1, border_color='#FF0000', command=lambda budget_id=budget_id: self.deleteBudget(budget_id))
         self.deleteButton.place(x=260, y=10)
 
         self.viewExpenseBtn = CTk.CTkButton(self.BudgetCard, text="View Expenses" , width=285, height=25, font=('Kameron', 17, 'bold'), command=lambda id=budget_id: self.fetchExpenses(id))
@@ -377,8 +394,9 @@ class HomeFrame(CTk.CTkFrame): #(680x480+285+105)
             if conn:
                 conn.close()
 
-    def setBudgetStatus(self, budget_id):
+    def setBudgetStatus(self, user_id, budget_id):
         try:
+            # db_lock.acquire()
             conn = sqlite3.connect(DATABASE)
             cursor = conn.cursor()
 
@@ -393,15 +411,17 @@ class HomeFrame(CTk.CTkFrame): #(680x480+285+105)
             if budget_amount_value is not None:
                 self.used_budget = total_expenses_value
                 
-                cursor.execute("UPDATE budget SET budget_status=? WHERE budget_id=?", (self.used_budget, budget_id))
+                updateQuery = "UPDATE budget SET budget_status=? WHERE budget_id=?"
+                cursor.execute(updateQuery, (self.used_budget, budget_id))
                 conn.commit()
 
                 # self.used.configure(text = f'Used: ${self.used_budget}')
 
         except sqlite3.Error as e:
-            messagebox.showerror("SQLite Error", f"{e}")
+            messagebox.showerror("SQLite Error (setBudgetStatus)", f"{e}")
 
         finally:
+            # db_lock.release()
             if conn:
                 conn.close()
 
@@ -412,14 +432,17 @@ class HomeFrame(CTk.CTkFrame): #(680x480+285+105)
             conn = sqlite3.connect(DATABASE)
             cursor = conn.cursor()
 
-            cursor.execute("SELECT budget_id, budget_name FROM budget WHERE user_id = ?", (user_id,))
-            budgets = cursor.fetchall()
+            if selected_budget_name != 'Select Budget':
+                cursor.execute("SELECT budget_id, budget_name FROM budget WHERE user_id = ?", (user_id,))
+                budgets = cursor.fetchall()
 
-            for tuple_item in budgets:
-                name = tuple_item[1]
-                if name == selected_budget_name:
-                    budget_id = tuple_item[0]
-                    return selected_budget_name, budget_id
+                for tuple_item in budgets:
+                    name = tuple_item[1]
+                    if name == selected_budget_name:
+                        budget_id = tuple_item[0]
+                        return selected_budget_name, budget_id
+            else:
+                messagebox.showerror('Budget Not Select', 'Please select a budget to add a expense in it.')
             
         except sqlite3.Error as e:
             messagebox.showerror("SQLite Error", f"{e}")
@@ -441,6 +464,8 @@ class HomeFrame(CTk.CTkFrame): #(680x480+285+105)
 
         name = self.expNameVar.get()
         amount = self.expAmountVar.get()
+
+        
 
         try:
             conn = sqlite3.connect(DATABASE)
@@ -508,14 +533,29 @@ class HomeFrame(CTk.CTkFrame): #(680x480+285+105)
             conn = sqlite3.connect(DATABASE)
             cursor = conn.cursor()
 
-            values = (user_id, name, amount, used)
+            now = dt.now()
 
-            cursor.execute(""" INSERT INTO budget (user_id, budget_name, budget_amount, budget_status) VALUES (?, ?, ?, ?) """, values)
-            conn.commit()
+            date = now.strftime(str(now.day) + '/' + str(now.month) + '/' + str(now.year))
+            time = now.strftime(str(now.hour) + ':' + str(now.minute) + ':' + str(now.second))
 
-            messagebox.showinfo('Budget Added', f'Budget Name: {name}\nAmount: ${amount}\n Budget has been added successfully.')
-            self.load_budgetCards(user_id)
-            self.getBudgets(user_id)
+            values = (user_id, name, amount, used, date, time)
+
+            if name == 'Budget Name':
+                name = ''
+
+            if amount == 'Budget Amount':
+                amount = ''
+
+            if name != '' and amount != '':
+                cursor.execute(""" INSERT INTO budget (user_id, budget_name, budget_amount, budget_status, date, time) VALUES (?, ?, ?, ?, ?, ?) """, values)
+                conn.commit()
+
+                messagebox.showinfo('Budget Added', f'Budget Name: {name}\nAmount: ${amount}\n Budget has been added successfully.')
+                self.load_budgetCards(user_id)
+                self.getBudgets(user_id)
+                self.clearBudgetFields()
+            else:
+                messagebox.showerror('Fields Empty', 'Make sur that you have entered the budget name & budget amount. You can later change the amount & name in the budget settings.')
 
         except sqlite3.Error as e:
             messagebox.showerror("SQLite Error", f"{e}")
@@ -529,15 +569,26 @@ class HomeFrame(CTk.CTkFrame): #(680x480+285+105)
             conn = sqlite3.connect(DATABASE)
             cursor = conn.cursor()
 
-            values = (budget_id, name, amount)
+
+            now = dt.now()
+
+            date = now.strftime(str(now.day) + '/' + str(now.month) + '/' + str(now.year))
+            time = now.strftime(str(now.hour) + ':' + str(now.minute) + ':' + str(now.second))
+
+            values = (budget_id, name, amount, date, time)
+
+            if name != '' and amount != 0 and name != 'Expense Name':
             
-            if self.checkIDExists(budget_id):
-                cursor.execute(""" INSERT INTO expense (budget_id, expense_name, expense_amount) VALUES (?, ?, ?) """, values)
-                conn.commit()
+                if self.checkIDExists(budget_id):
+                    cursor.execute(""" INSERT INTO expense (budget_id, expense_name, expense_amount, date, time) VALUES (?, ?, ?, ?, ?) """, values)
+                    conn.commit()
 
-                messagebox.showinfo('Expense Added', f'Expense of ${amount} has been added to {self.budname}')
+                    messagebox.showinfo('Expense Added', f'Expense of ${amount} has been added to {self.budname}')
+                    self.clearExpenseFields()
+                    self.refresh(budget_id) 
 
-                self.refresh(budget_id)
+            else:
+                messagebox.showerror('Fields Empty', 'Please enter the name and amount of the expense.')
 
 
         except sqlite3.Error as e:
@@ -547,11 +598,51 @@ class HomeFrame(CTk.CTkFrame): #(680x480+285+105)
             if conn:
                 conn.close()
 
+    # Delete Functions
+    def deleteBudget(self, budget_id):
+        try:
+            conn = sqlite3.connect(DATABASE)
+            cursor = conn.cursor()
+
+            veri = messagebox.askyesno('Delete Budget', 'Are you sure you want to delete this budget?')
+
+            if veri:
+                cursor.execute("DELETE FROM budget WHERE budget_id=?", (budget_id,))
+                conn.commit()
+
+                messagebox.showinfo('Budget Deleted', 'The budget has been deleted successfully.')
+                
+        except sqlite3.Error as e:
+            messagebox.showerror("SQLite Error", f"{e}")
+
+        finally:
+            if conn:
+                conn.close()
+        
+        self.load_budgetCards(self.user_id)
+        self.getBudgets(self.user_id)
+
     # Budget Card Functions
     def refresh(self, budget_id):
-        self.setBudgetStatus(budget_id)
+        self.setBudgetStatus(self.user_id, budget_id)
         self.load_budgetCards(self.user_id)
-        
+    
+    # Clear Functions
+    def clearBudgetFields(self):
+        self.budNameVar.set('')
+        self.budAmountVar.set('')
+
+        EntryPlaceholderManager(self.nameEnt, 'Budget Name')
+        EntryPlaceholderManager(self.amountEnt, 'Budget Amount')
+
+    def clearExpenseFields(self):
+        self.expNameVar.set('')
+        EntryPlaceholderManager(self.enameEnt, 'Expense Name')
+
+        self.expAmountVar.set(0)
+        self.budEnt.set("Select Budget")
+
+
     # View Functions
     def fetchExpenses(self, budgetid):
         #__init__
@@ -580,7 +671,7 @@ class HomeFrame(CTk.CTkFrame): #(680x480+285+105)
         self.table.column('#1', width=50, anchor='center')
         self.table.column('#2', width=250, anchor='center')  
         self.table.column('#3', width=160, anchor='center')
-        print(self.table.winfo_class())
+        # print(self.table.winfo_class())
 
         self.table.grid(row=0, column=0, sticky='nsew', padx=10, pady=10)
 
@@ -683,7 +774,7 @@ class MainPage(CTk.CTk): #toplevel
         self.navFrame.place(x=20, y=105)
 
         # Main Frames (680x480+285+105)
-        self.homeFrame = HomeFrame(self, 680, 480, 4)
+        self.homeFrame = HomeFrame(self, 680, 480, 1)
         self.profileFrame = ProfileFrame(self, 680, 480)
         self.settingsFrame = SettingsFrame(self, 680, 480)
 
@@ -697,6 +788,10 @@ class MainPage(CTk.CTk): #toplevel
 
         self.button_pressed_callback('home')
 
+
+        
+
+  
         
 
     def button_pressed_callback(self, button_name):
@@ -723,8 +818,6 @@ class MainPage(CTk.CTk): #toplevel
             self.settingsFrame.place(x=285, y=105)
         else:
             self.settingsFrame.place_forget()
-
-        
 
 if __name__ == '__main__':
     app = MainPage()

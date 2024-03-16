@@ -1,8 +1,10 @@
-import random
-import string
-import time
 import re
 import os
+import sys
+import time
+import string
+import random
+import subprocess
 
 import sqlite3
 import smtplib
@@ -14,6 +16,7 @@ from tkinter import ttk, messagebox
 from PIL import ImageTk, Image
 from dotenv import load_dotenv
 
+from datetime import datetime as dt
 import customtkinter as CTk
 
 from loginPage import LoginPage
@@ -463,13 +466,96 @@ class RegisterPage(CTk.CTk):
         secret_key = pyotp.random_base32()
         return secret_key
 
-    def addData(self):
-        self.userVeriWin = UserVerification()
+    def checkUniqueUsername(self, username):
         try:
             conn = sqlite3.connect(DATABASE, isolation_level=None)  # Set isolation_level to None for autocommit mode
             cursor = conn.cursor()
 
-            go = "no"
+            query = "SELECT * FROM registration WHERE username = ?"
+            cursor.execute(query, (username,))
+
+            num_rows = cursor.fetchone()
+
+            if num_rows is not None:
+                return False
+            else:
+                return True
+
+        except sqlite3.Error as e:
+            messagebox.showerror("SQLite Error", f"{e}")
+            # print(f"SQLite error: {e}")
+
+        finally:
+            if conn:
+                conn.close()
+
+    def restrictions(self, valid_email, sqa_tog, sec_que, sec_que_ans, first_name, username, password):
+        score = 0
+
+        # Email Validation
+        if valid_email == 1:
+            score += 1
+
+            # Security Question Validation
+            if sqa_tog == "on":
+                if sec_que == "Select" or sec_que_ans == "Answer" or not sec_que or not sec_que_ans:
+                    messagebox.showerror("Invalid Security Question", "Please select a valid security question and provide an answer.")
+                else:
+                    score += 1
+
+                    # Check if fields are filled
+                    if first_name and username and password:
+                        score += 1
+
+                        # Check username uniqueness
+                        if self.checkUniqueUsername(username):
+                            score += 1
+
+                            # Password Length Validation
+                            if len(password) >= 6:
+                                score += 1
+
+                                return score == 5
+
+                            else:
+                                messagebox.showerror("Password Too Short", "The password you have entered is too short. Password must be at least 6 characters long.")
+                        else:
+                            messagebox.showerror('Username Not Available', 'The username you have entered is already taken. Please choose another username.')
+                    else:
+                        messagebox.showerror("Fields Empty", "Ensure that you have filled the following fields: \n\n1. First Name\n2. Username\n3. Password")
+            else:
+                # Check if fields are filled
+                if first_name and username and password:
+                    score += 1
+
+                    # Check username uniqueness
+                    if self.checkUniqueUsername(username):
+                        score += 1
+
+                        # Password Length Validation
+                        if len(password) >= 6:
+                            score += 1
+
+                            return score == 4
+
+                        else:
+                            messagebox.showerror("Password Too Short", "The password you have entered is too short. Password must be at least 6 characters long.")
+                    else:
+                        messagebox.showerror('Username Not Available', 'The username you have entered is already taken. Please choose another username.')
+                else:
+                    messagebox.showerror("Fields Empty", "Ensure that you have filled the following fields: \n\n1. First Name\n2. Username\n3. Password")
+
+        else:
+            messagebox.showerror("Invalid Email", "The email you have entered is not valid. The supported domains are:\n\n1. gmail.com\n2. hotmail.com\n3. outlook.com\n4. yahoo.com\n5. rediffmail.com")
+
+        # return score == 5
+
+    def addData(self):
+        self.userVeriWin = None
+        
+        try:
+            conn = sqlite3.connect(DATABASE, isolation_level=None)  # Set isolation_level to None for autocommit mode
+            cursor = conn.cursor()
 
             first_name = self.regFromFrame.firstNameVar.get()
             last_name = self.regFromFrame.lastNameVar.get()
@@ -481,7 +567,13 @@ class RegisterPage(CTk.CTk):
             sqa_tog = self.secFrame.securityQue.get()
             tfa_tog = self.secFrame.twofactorVer.get()
             valid_email = self.regFromFrame.emailVal.get()
+            
             secret_key = self.generate_secret_key()
+
+            now = dt.now()
+
+            date = now.strftime(str(now.day) + '/' + str(now.month) + '/' + str(now.year))
+            time = now.strftime(str(now.hour) + ':' + str(now.minute) + ':' + str(now.second))
 
             # print(f"Before: first_name={first_name}")
             if first_name == "First Name":
@@ -507,41 +599,24 @@ class RegisterPage(CTk.CTk):
                 if sec_que_ans == "Answer":
                     sec_que_ans = ""
 
-            data_to_insert = (first_name, last_name, email, username, password, sec_que, sec_que_ans, sqa_tog, tfa_tog, valid_email, secret_key)
+            data_to_insert = (first_name, last_name, email, username, password, sec_que, sec_que_ans, sqa_tog, tfa_tog, valid_email, secret_key, date, time)
             insert_query = """
-            INSERT INTO "registration" ("first_name", "last_name", "email", "username", "password", "sec_que", "sec_que_ans", "sqa_tog", "tfa_tog", "valid_email", "secret_key")
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-            """            
+            INSERT INTO "registration" ("first_name", "last_name", "email", "username", "password", "sec_que", "sec_que_ans", "sqa_tog", "tfa_tog", "valid_email", "secret_key", "date", "time")
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+            """        
+               
+            restrictionsPassed = self.restrictions(valid_email, sqa_tog, sec_que, sec_que_ans, first_name, username, password)
+            # print(restrictionsPassed)
 
-            if valid_email == 0:
-                # print("Invalid Email: Show error message")
-                messagebox.showerror("Invalid Email", "The email you have entered is not valid. The domains that we support are as follows:\n\n(1.) gmail.com\n(2.) hotmail.com\n(3.) outlook.com\n(4.) yahoo.com\n(5.) rediffmail.com\n")
-
-            if sqa_tog == "on" and go == 'no':
-                if sec_que == "Select" or sec_que_ans == "Answer" or not sec_que or not sec_que_ans:
-                    # print("Invalid Security Question: Show error message")
-                    messagebox.showerror("Invalid Security Question", "Please select a valid security question and provide an answer.")
-                go = "yes"
-            
-            if first_name != "" and username != "" and password != "":
-                if valid_email == 1 and go == "yes":
-                    if len(password) > 6:
-                        # print("Inserting data into the database")
-                        cursor.execute(insert_query, data_to_insert)
-                        go='no'
-                        self.setToDefault()
-                        messagebox.showinfo("User Registered", f"Welcome, {first_name} to the Spend Wise!!!")
-                        self.user_id.set(int(cursor.lastrowid))
-                        self.openUserVerificationWin()
-                        self.userVeriWin.getData(self.user_id.get())
-                        self.userVeriWin.user_id = int(self.user_id.get())
-
-                    else:
-                        messagebox.showerror("Password Too Short", "The password you have entered is too short. Password must be atleast 6 charaters long...")
-            else:
-                messagebox.showerror("Fields Empty", "Ensure that you have filled the following fields :- \n\n1. First Name\n2. Username\n3. Password")
-
-
+            if restrictionsPassed:
+                cursor.execute(insert_query, data_to_insert)
+                self.setToDefault()
+                messagebox.showinfo("User Registered", f"Welcome, {first_name} to the Spend Wise!!!")
+                self.userVeriWin = UserVerification()
+                self.user_id.set(int(cursor.lastrowid))
+                self.openUserVerificationWin()
+                self.userVeriWin.getData(self.user_id.get())
+                self.userVeriWin.user_id = int(self.user_id.get())                    
 
         except sqlite3.Error as e:
             messagebox.showerror("SQLite Error", f"{e}")
@@ -592,7 +667,7 @@ class UserVerification(CTk.CTkToplevel):
         super().__init__()
 
         self.title('User Verification')
-        self.geometry("600x410+750+50")
+        self.geometry("600x500+750+50")
         self.resizable(False, False) 
 
         self.registerPage = RegisterPage()
@@ -607,6 +682,9 @@ class UserVerification(CTk.CTkToplevel):
 
         self.info_frame = CTk.CTkFrame(self, 560, 150)
         self.info_frame.place(x=20, y=110)
+
+        self.laterFrame = CTk.CTkFrame(self, 560, 70)
+        self.laterFrame.place(x=20, y=410)
 
         self.name = CTk.CTkLabel(master=self.info_frame, text="Name : ", font=('Kameron', 20))
         self.name.place(relx=0.125, y=20, anchor='center')
@@ -641,19 +719,17 @@ class UserVerification(CTk.CTkToplevel):
         self.verify = CTk.CTkButton(master=self.otp_frame, text="Verify", font=('Kameron', 20, 'bold'), width=310, command=self.verifyOTP)
         self.verify.place(x=230, y=60)
 
-    def create_login_page(self):
-        login_page = LoginPage()
-        login_page.mainloop()
-
+        self.later = CTk.CTkButton(master=self.laterFrame, text="Do it Later !!!", font=('Kameron', 20, 'bold'), width=520, command=self.doItLater, height=20)
+        self.later.place(x=20, y=20)
 
     def loginPage(self, registered:bool = False):
         if registered == True:
             
-            self.create_login_page()
+            subprocess.run(["python", "loginPage.py"])
             
             self.destroy()
             self.quit()
-
+            sys.exit()
 
     def edit_button(self):
         dialog = CTk.CTkInputDialog(text="Type the New Email Address :", title="Edit Email Address", font=('Kameron', 20, 'bold'))
@@ -731,7 +807,6 @@ class UserVerification(CTk.CTkToplevel):
         self.name_.configure(text=name)
         self.username_.configure(text=username)
         self.email_.configure(text=email)
-
 
     def generate_alphanumeric_otp(self, length=6):
         characters = string.ascii_letters.upper() + string.digits
@@ -827,3 +902,6 @@ class UserVerification(CTk.CTkToplevel):
         finally:
             if conn:
                 conn.close()
+
+    def doItLater(self):
+        self.loginPage(True)
