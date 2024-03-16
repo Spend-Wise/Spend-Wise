@@ -2,6 +2,7 @@ import os
 import sys
 import string
 import random
+import subprocess
 
 import sqlite3
 import smtplib
@@ -156,7 +157,7 @@ class LoginFormFrame(CTk.CTkFrame):
             if conn:
                 conn.close()
 
-class LoginPage(CTk.CTkToplevel):
+class LoginPage(CTk.CTk):
     def __init__(self):
         super().__init__()
 
@@ -196,7 +197,7 @@ class LoginPage(CTk.CTkToplevel):
         self.username = self.LoginFrame.userNameVar.get()
         self.password = self.LoginFrame.passWordVar.get()
 
-        print(self.user_id, self.username, self.password)
+        # print(self.user_id, self.username, self.password)
 
     def login(self):
 
@@ -206,7 +207,7 @@ class LoginPage(CTk.CTkToplevel):
             conn = sqlite3.connect(DATABASE)
             cursor = conn.cursor()
 
-            print(self.user_id, self.username, self.password)
+            # print(self.user_id, self.username, self.password)
 
             # Assuming 'registration' table has columns 'username' and 'password'
             query = f"SELECT user_id, first_name, last_name, tfa_tog FROM registration WHERE user_id = ? AND username = ? AND password = ?;"
@@ -219,9 +220,17 @@ class LoginPage(CTk.CTkToplevel):
             elif user_data:
                 user_id_result, first_name, last_name, tfa_tog = user_data
                 messagebox.showinfo("Login Successful", f"Welcome, {first_name} {last_name}!")
+
+                current_user_id = self.user_id
+
+                file = open('user_id_file.txt', 'w')
+                file.write(current_user_id)
+                file.close()
+
                 if tfa_tog == "on":
                     self.TFA(self.user_id)
                 else:
+                    subprocess.run(["python", "mainPage.py"])  
                     sys.exit()
             else:
                 messagebox.showerror("Login Failed", "Invalid user ID, username, or password.")
@@ -627,9 +636,8 @@ class TFA(CTk.CTkToplevel):
         
         if self.totp.verify(entered_otp):
             messagebox.showinfo("Authentication Successful", "OTP is valid. Access granted!")
-            self.destroy()
-            self.quit()
-            sys.exit()
+            subprocess.run(["python", "mainPage.py"])  
+            
         else:
             messagebox.showerror("Authentication Failed", "Invalid OTP. Access denied.")
 

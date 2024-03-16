@@ -274,9 +274,12 @@ class HomeFrame(CTk.CTkFrame): #(680x480+285+105)
 
             if not budgets:
                 for child in self.BsFra.winfo_children():
-                        # print(self.BsFra.winfo_children())
-                        child.destroy()
+                    # print(self.BsFra.winfo_children())
+                    child.destroy()
             else:
+                for child in self.BsFra.winfo_children():
+                    # print(self.BsFra.winfo_children())
+                    child.destroy()
                 for i, budget_info in enumerate(budgets):
                     # print(budget_info)
                     if budget_info:
@@ -762,6 +765,9 @@ class MainPage(CTk.CTk): #toplevel
         self.geometry(f'{1330}x{660}+10+10')
         self.resizable(False, False)
 
+        file = open('user_id_file.txt', 'r')
+        user_id = file.read()
+
         # Title
         titleFrame = CTk.CTkFrame(self, width=1290, height=70)
         titleFrame.place(x=20, y=20)
@@ -774,7 +780,7 @@ class MainPage(CTk.CTk): #toplevel
         self.navFrame.place(x=20, y=105)
 
         # Main Frames (680x480+285+105)
-        self.homeFrame = HomeFrame(self, 680, 480, 1)
+        self.homeFrame = HomeFrame(self, 680, 480, user_id)
         self.profileFrame = ProfileFrame(self, 680, 480)
         self.settingsFrame = SettingsFrame(self, 680, 480)
 

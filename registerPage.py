@@ -756,7 +756,7 @@ class UserVerification(CTk.CTkToplevel):
             SET email = ?
             WHERE user_id = ?;
             """
-            print(new_email, self.user_id)
+            # print(new_email, self.user_id)
             cursor.execute(update_query, (new_email, self.user_id))
 
             conn.commit()
@@ -788,13 +788,13 @@ class UserVerification(CTk.CTkToplevel):
 
             if result:
                 first_name, last_name, email, username = result
-                print(result)
+                # print(result)
                 
                 name = first_name + " " + last_name
 
                 self.updatLabels(name, username, email)
             else:
-                print("User not found.")
+                messagebox.showerror("User not found.", "User not found")
 
         except sqlite3.Error as e:
             messagebox.showerror("SQLite Error", f"{e}")
@@ -838,7 +838,7 @@ class UserVerification(CTk.CTkToplevel):
 
             if result:
                 first_name, last_name, email = result
-                print(result)
+                # print(result)
                 
                 user = first_name + " " + last_name
                 otp = self.otp
@@ -853,7 +853,7 @@ class UserVerification(CTk.CTkToplevel):
                 messagebox.showinfo('OTP sent', f"OTP has been sent to following Email Address : \n\n {receiver_email}")
 
             else:
-                print("User not found.")
+                messagebox.showerror("User not found.","User not found.")
 
             
 
@@ -883,7 +883,7 @@ class UserVerification(CTk.CTkToplevel):
             """
 
             if enteredOTP == verificationOTP:
-                print(self.user_id)
+                # print(self.user_id)
                 cursor.execute(update_query, (valid_user, self.user_id))
                 conn.commit()
                 messagebox.showinfo("Verified", f"Your Account Has been Verified.\n\nPlease note that your USERID is : {self.user_id}. Don't forget your USERID as it is used all over the application.")
