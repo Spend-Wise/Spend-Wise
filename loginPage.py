@@ -40,50 +40,34 @@ class SubTitleFrame(CTk.CTkFrame):
         self.title.grid(row=0, column=0, padx=20, pady=0)
 
 class LoginFormFrame(CTk.CTkFrame):
-    def __init__(self, master, width=360, height=130):
+    def __init__(self, master, width=360, height=90):
         super().__init__(master, width, height)
 
         self.userNameVar = StringVar()
         self.passWordVar = StringVar()
-        self.userIdVar = StringVar()
-
-        self.userIDint = [0]
-        self.userID = []
 
         self.showHidePassVar = IntVar()
 
-        # User ID
-        self.userId = CTk.CTkLabel(self, text='User ID:', fg_color='transparent', font=('Kameron', 20))
-        self.userId.place(x=10, y=10)
-
-        self.uidEnt = CTk.CTkComboBox(self, font=('Kameron', 20), width=150, values=self.userID, variable=self.userIdVar)
-        self.uidEnt.place(x=130, y=10)
-
         # Username
         self.userName = CTk.CTkLabel(self, text='Username:', fg_color='transparent', font=('Kameron', 20))
-        self.userName.place(x=10, y=50)
+        self.userName.place(x=10, y=10)
 
         self.uNameEnt = CTk.CTkEntry(self, font=('Kameron', 20), width=150, textvariable=self.userNameVar)
-        self.uNameEnt.place(x=130, y=50)
+        self.uNameEnt.place(x=130, y=10)
 
         # Password
         self.passWord = CTk.CTkLabel(self, text='Password:', fg_color='transparent', font=('Kameron', 20))
-        self.passWord.place(x=10, y=90)
+        self.passWord.place(x=10, y=50)
 
         self.passWordEnt = CTk.CTkEntry(self, font=('Kameron', 20), width=150, show='*', textvariable=self.passWordVar)
-        self.passWordEnt.place(x=130, y=90)
+        self.passWordEnt.place(x=130, y=50)
 
         # Show/Hide Password Button
         self.shButton = CTk.CTkButton(self, text='Show', width=65, font=('Kameron', 20), command=self.showHidePass)
-        self.shButton.place(x=290, y=90)
+        self.shButton.place(x=290, y=50)
 
         self.add_placeholder(self.uNameEnt, 'Username')
         self.add_placeholder(self.passWordEnt, 'Password')
-
-        self.getUserIDs()
-
-        # Bind the checkUserID function to KeyRelease event of the ComboBox
-        self.uidEnt.bind("<KeyRelease>", lambda event: self.checkUserID())
 
     def showHidePass(self):
         currentStatus = self.showHidePassVar.get()
@@ -116,53 +100,56 @@ class LoginFormFrame(CTk.CTkFrame):
             entry.insert(0, placeholder)
             entry.configure(text_color="gray")
 
-    def uidset(self):
-        if self.uidEnt.get() == '':
-            self.uidEnt.set('0')
+    # def uidset(self):
+    #     if self.uidEnt.get() == '':
+    #         self.uidEnt.set('0')
 
-    def checkUserID(self):
-        entered_user_id = self.userIdVar.get()
+    # def checkUserID(self):
+    #     entered_user_id = self.userIdVar.get()
 
-        if not entered_user_id:
-            messagebox.showerror("Error", "User ID cannot be empty.")
-            return
+    #     if not entered_user_id:
+    #         messagebox.showerror("Error", "User ID cannot be empty.")
+    #         return
 
-        try:
-            entered_user_id = int(entered_user_id)
-        except ValueError:
-            messagebox.showerror("Error", "Invalid User ID. Please enter a valid number.")
-            return
+    #     try:
+    #         entered_user_id = int(entered_user_id)
+    #     except ValueError:
+    #         messagebox.showerror("Error", "Invalid User ID. Please enter a valid number.")
+    #         return
 
-        if entered_user_id not in self.userIDint:
-            messagebox.showerror("Error", "Invalid User ID. Please select a valid User ID.")
-            self.uidEnt.set('0')
+    #     if entered_user_id not in self.userIDint:
+    #         messagebox.showerror("Error", "Invalid User ID. Please select a valid User ID.")
+    #         self.uidEnt.set('0')
 
-    def getUserIDs(self):
-        try:
-            conn = sqlite3.connect(DATABASE)
-            cursor = conn.cursor()
+    # def getUserIDs(self):
+    #     try:
+    #         conn = sqlite3.connect(DATABASE)
+    #         cursor = conn.cursor()
 
-            cursor.execute('SELECT user_id FROM registration')
+    #         cursor.execute('SELECT user_id FROM registration')
 
-            user_ids = [row[0] for row in cursor.fetchall()]
+    #         user_ids = [row[0] for row in cursor.fetchall()]
 
-            self.userIDint.extend(user_ids)
-            self.userID = [str(x) for x in self.userIDint]
-            self.uidEnt.configure(values=self.userID)
+    #         self.userIDint.extend(user_ids)
+    #         self.userID = [str(x) for x in self.userIDint]
+    #         self.uidEnt.configure(values=self.userID)
 
-        except sqlite3.Error as e:
-            messagebox.showerror("SQLite Error", f"{e}")
+    #     except sqlite3.Error as e:
+    #         messagebox.showerror("SQLite Error", f"{e}")
 
-        finally:
-            if conn:
-                conn.close()
+    #     finally:
+    #         if conn:
+    #             conn.close()
 
 class LoginPage(CTk.CTk):
     def __init__(self):
         super().__init__()
 
+        self.current_user_id = StringVar()
+        self.username = StringVar()
+
         self.title("Spend Wise Login Page")
-        self.geometry("400x400+50+50")
+        self.geometry("400x350+50+50")
         self.resizable(False, False)
 
         self.grid_rowconfigure(0, weight=1)
@@ -178,10 +165,10 @@ class LoginPage(CTk.CTk):
         self.LoginFrame.place(x=20, y=160)
 
         self.login = CTk.CTkButton(self, text='Login', width=360, font=('Kameron', 20), command=self.login)
-        self.login.place(x=20, y=300)
+        self.login.place(x=20, y=260)
 
         self.fpbutton = CTk.CTkButton(self, text='Forgot Password', width=360, font=('Kameron', 20), command=self.forgot_password)
-        self.fpbutton.place(x=20, y=340)
+        self.fpbutton.place(x=20, y=300)
 
         self.protocol("WM_DELETE_WINDOW", self.on_close)
 
@@ -192,8 +179,8 @@ class LoginPage(CTk.CTk):
         self.quit()
 
     def getData(self):
-        self.LoginFrame.uidset()
-        self.user_id = self.LoginFrame.userIdVar.get()
+        # self.LoginFrame.uidset()
+        # self.user_id = self.LoginFrame.userIdVar.get()
         self.username = self.LoginFrame.userNameVar.get()
         self.password = self.LoginFrame.passWordVar.get()
 
@@ -210,25 +197,25 @@ class LoginPage(CTk.CTk):
             # print(self.user_id, self.username, self.password)
 
             # Assuming 'registration' table has columns 'username' and 'password'
-            query = f"SELECT user_id, first_name, last_name, tfa_tog FROM registration WHERE user_id = ? AND username = ? AND password = ?;"
-            cursor.execute(query, (self.user_id, self.username, self.password))
+            query = f"SELECT user_id, first_name, last_name, tfa_tog FROM registration WHERE username = ? AND password = ?;"
+            cursor.execute(query, (self.username, self.password))
 
             user_data = cursor.fetchone()
 
-            if self.user_id == "" or self.username == "" or self.password == "":
-                messagebox.showerror("Fields Empty", "User ID/Username/Password field(s) are empty. Please fill the empty field.")
+            if self.username == "" or self.password == "":
+                messagebox.showerror("Fields Empty", "Username/Password field(s) are empty. Please fill the empty field.")
             elif user_data:
-                user_id_result, first_name, last_name, tfa_tog = user_data
+                user_id, first_name, last_name, tfa_tog = user_data
                 messagebox.showinfo("Login Successful", f"Welcome, {first_name} {last_name}!")
 
-                current_user_id = self.user_id
+                self.current_user_id = str(user_id)
 
                 file = open('user_id_file.txt', 'w')
-                file.write(current_user_id)
+                file.write(self.current_user_id)
                 file.close()
 
                 if tfa_tog == "on":
-                    self.TFA(self.user_id)
+                    self.TFA(self.current_user_id)
                 else:
                     subprocess.run(["python", "mainPage.py"])  
                     sys.exit()
@@ -244,18 +231,18 @@ class LoginPage(CTk.CTk):
 
     def forgot_password(self):
 
-        user_id = self.LoginFrame.userIdVar.get()
+        user_id = self.current_user_id
 
         try:
             conn = sqlite3.connect(DATABASE)
             cursor = conn.cursor()
 
-            query = f"SELECT sqa_tog, first_name FROM registration WHERE user_id=?"
-            cursor.execute(query, (user_id,))
+            query = f"SELECT user_id, sqa_tog, first_name FROM registration WHERE username=?"
+            cursor.execute(query, (self.username,))
             user_data = cursor.fetchone()
 
             if user_data:
-                sqa_tog, first_name = user_data
+                user_id, sqa_tog, first_name = user_data
                 # print(sqa_tog)
                 self.SecurityQuestion(user_id) if sqa_tog == "on" else self.OTPVerification(user_id) if sqa_tog == "off" else None
 
