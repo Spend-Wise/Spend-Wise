@@ -35,6 +35,9 @@ DATABASE = os.environ.get("DATABASE")
 EMAIL = os.environ.get("EMAIL")
 PASSWORD = os.environ.get("PASSWORD")
 
+USER_ID_FILE = os.environ.get("USER_ID_FILE")
+BUDGET_ID_FILE = os.environ.get("BUDGET_ID_FILE")
+
 # Frames
 class NavigationFrame(CTk.CTkFrame):
     def __init__(self, master, width: int, height: int, button_callback):
@@ -360,7 +363,7 @@ class HomeFrame(CTk.CTkFrame): #(680x480+285+105)
 
         self.progress.set(progress)
 
-        self.settingsButton = CTk.CTkButton(self.BudgetCard, text="", image=self.settingsImg, width=20, height=20, fg_color="transparent", hover_color=("gray70", "gray30"), border_width=1)
+        self.settingsButton = CTk.CTkButton(self.BudgetCard, text="", image=self.settingsImg, width=20, height=20, fg_color="transparent", hover_color=("gray70", "gray30"), border_width=1, command=lambda budget_id=budget_id: self.settings(budget_id))
         self.settingsButton.place(x=180, y=10)
 
         self.refreshButton = CTk.CTkButton(self.BudgetCard, text="", image=self.refreshImg, width=20, height=20, fg_color="transparent", hover_color=("gray70", "gray30"), border_width=1, command=lambda budget_id=budget_id: self.refresh(budget_id))
@@ -645,7 +648,6 @@ class HomeFrame(CTk.CTkFrame): #(680x480+285+105)
         self.expAmountVar.set(0)
         self.budEnt.set("Select Budget")
 
-
     # View Functions
     def fetchExpenses(self, budgetid):
         #__init__
@@ -742,6 +744,13 @@ class HomeFrame(CTk.CTkFrame): #(680x480+285+105)
         else:
             return str(number)
 
+    def settings(self, budget_id):
+        file = open(BUDGET_ID_FILE, 'w')
+        file.write(str(budget_id))
+        file.close()
+
+        print(f'opened Settings of budget :- {budget_id}')
+
 class ProfileFrame(CTk.CTkFrame): #(680x480+285+105)
     def __init__(self, master, width: int, height: int):
         super().__init__(master, width, height)
@@ -765,7 +774,7 @@ class MainPage(CTk.CTk): #toplevel
         self.geometry(f'{1330}x{660}+10+10')
         self.resizable(False, False)
 
-        file = open('user_id_file.txt', 'r')
+        file = open(USER_ID_FILE, 'r')
         user_id = file.read()
 
         # Title

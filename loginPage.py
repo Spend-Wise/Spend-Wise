@@ -24,6 +24,7 @@ load_dotenv()
 DATABASE = os.environ.get("DATABASE")
 EMAIL = os.environ.get("EMAIL")
 PASSWORD = os.environ.get("PASSWORD")
+USER_ID_FILE = os.environ.get('USER_ID_FILE')
 
 class TitleFrame(CTk.CTkFrame):
     def __init__(self, master, width: int, height: int):
@@ -210,7 +211,7 @@ class LoginPage(CTk.CTk):
 
                 self.current_user_id = str(user_id)
 
-                file = open('user_id_file.txt', 'w')
+                file = open(USER_ID_FILE, 'w')
                 file.write(self.current_user_id)
                 file.close()
 
