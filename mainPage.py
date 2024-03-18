@@ -1,8 +1,7 @@
 # Imports
 
 import os
-import time
-import threading
+import subprocess
 
 import sqlite3
 
@@ -29,7 +28,6 @@ CTk.set_default_color_theme("dark-blue")
 
 # Environment Variables
 load_dotenv()
-db_lock = threading.Lock()
 
 DATABASE = os.environ.get("DATABASE")
 EMAIL = os.environ.get("EMAIL")
@@ -749,7 +747,7 @@ class HomeFrame(CTk.CTkFrame): #(680x480+285+105)
         file.write(str(budget_id))
         file.close()
 
-        print(f'opened Settings of budget :- {budget_id}')
+        subprocess.run(["python", "sysWin.py"])  
 
 class ProfileFrame(CTk.CTkFrame): #(680x480+285+105)
     def __init__(self, master, width: int, height: int):
