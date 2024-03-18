@@ -1,5 +1,6 @@
 import os
 import sys
+import json
 import string
 import random
 import subprocess
@@ -24,7 +25,7 @@ load_dotenv()
 DATABASE = os.environ.get("DATABASE")
 EMAIL = os.environ.get("EMAIL")
 PASSWORD = os.environ.get("PASSWORD")
-USER_ID_FILE = os.environ.get('USER_ID_FILE')
+JSON_FILE = os.environ.get('JSON_FILE')
 
 class TitleFrame(CTk.CTkFrame):
     def __init__(self, master, width: int, height: int):
@@ -211,9 +212,16 @@ class LoginPage(CTk.CTk):
 
                 self.current_user_id = str(user_id)
 
-                file = open(USER_ID_FILE, 'w')
-                file.write(self.current_user_id)
-                file.close()
+                #-----------------------------------
+                # SETTING UP THE USER_ID
+                with open(JSON_FILE, 'r') as file:
+                    data = json.load(file)
+            
+                data['user_id'] = self.current_user_id
+                
+                with open(JSON_FILE, 'w') as file:
+                    json.dump(data, file)
+                #----------------------------------
 
                 if tfa_tog == "on":
                     self.TFA(self.current_user_id)

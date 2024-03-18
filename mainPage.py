@@ -1,6 +1,7 @@
 # Imports
 
 import os
+import json
 import subprocess
 
 import sqlite3
@@ -33,8 +34,7 @@ DATABASE = os.environ.get("DATABASE")
 EMAIL = os.environ.get("EMAIL")
 PASSWORD = os.environ.get("PASSWORD")
 
-USER_ID_FILE = os.environ.get("USER_ID_FILE")
-BUDGET_ID_FILE = os.environ.get("BUDGET_ID_FILE")
+JSON_FILE = os.environ.get('JSON_FILE')
 
 # Frames
 class NavigationFrame(CTk.CTkFrame):
@@ -743,9 +743,13 @@ class HomeFrame(CTk.CTkFrame): #(680x480+285+105)
             return str(number)
 
     def settings(self, budget_id):
-        file = open(BUDGET_ID_FILE, 'w')
-        file.write(str(budget_id))
-        file.close()
+        with open(JSON_FILE, 'r') as file:
+                    data = json.load(file)
+            
+        data['budget_id'] = budget_id
+        
+        with open(JSON_FILE, 'w') as file:
+            json.dump(data, file)
 
         subprocess.run(["python", "sysWin.py"])  
 
@@ -772,8 +776,13 @@ class MainPage(CTk.CTk): #toplevel
         self.geometry(f'{1330}x{660}+10+10')
         self.resizable(False, False)
 
-        file = open(USER_ID_FILE, 'r')
-        user_id = file.read()
+        #----------------------------------
+        # Getting the USER_ID
+        with open(JSON_FILE, 'r') as file:
+            data = json.load(file)
+    
+        user_id = data['user_id']
+        #-----------------------------------
 
         # Title
         titleFrame = CTk.CTkFrame(self, width=1290, height=70)
