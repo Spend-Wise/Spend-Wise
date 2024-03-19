@@ -754,7 +754,10 @@ class HomeFrame(CTk.CTkFrame): #(680x480+285+105)
         with open(JSON_FILE, 'w') as file:
             json.dump(data, file)
 
-        subprocess.run(["python", "sysWin.py"])  
+        result = subprocess.run(["python", "sysWin.py"])
+
+        if result.returncode == 0:
+            self.load_budgetCards(self.user_id)
 
 class ProfileFrame(CTk.CTkFrame): #(680x480+285+105)
     def __init__(self, master, width: int, height: int):

@@ -25,9 +25,9 @@ class Win(CTk):
         self.resizable(False, False)
         self.focus_force()
 
-        self.inamountVar = IntVar()
+        self.inamountVar = StringVar()
         self.chcategory = StringVar()
-        self.expenseLimitVar = IntVar()
+        self.expenseLimitVar = StringVar()
 
         self.formats = ['Select Format', 'JSON', 'Excel File', 'CSV']
 
@@ -146,7 +146,7 @@ class Win(CTk):
         self.tbrl = CTkLabel(self.increaseBudgetFrame, text='----', font=('Kameron', 18, 'bold'), width=200, justify='center')
         self.tbrl.place(x=250, y=95)
 
-        self.inBtn = CTkButton(self.increaseBudgetFrame, text='Increase Budget', font=('Kameron', 18, 'bold'), width=450)
+        self.inBtn = CTkButton(self.increaseBudgetFrame, text='Increase Budget', font=('Kameron', 18, 'bold'), width=450, command=self.increaseBudget)
         self.inBtn.place(x=10, y=130)
 
         #=====================================================================================
@@ -160,8 +160,8 @@ class Win(CTk):
         self.cateEnt = CTkEntry(self.budgetCategoryFrame, width=190, font=('Kameron', 18), textvariable=self.chcategory)
         self.cateEnt.place(x=250, y=35)
 
-        self.inBtn = CTkButton(self.budgetCategoryFrame, text='Change Category', font=('Kameron', 18, 'bold'), width=450)
-        self.inBtn.place(x=10, y=75)
+        self.chBtn = CTkButton(self.budgetCategoryFrame, text='Change Category', font=('Kameron', 18, 'bold'), width=450, command=self.changeCategory)
+        self.chBtn.place(x=10, y=75)
 
         #=============================================================================
         # expenseLimitFrame Widgets
@@ -205,6 +205,11 @@ class Win(CTk):
 
         # Funciton Calls
         self.setData()
+        # self.updateAmounts()
+
+        # Binding
+        self.entamo.bind('<KeyRelease>', self.setzero)
+        self.entamo.bind('<KeyRelease>', self.updateAmounts)
 
     def getBudgetID(self):
         with open(JSON_FILE, 'r') as file:
@@ -307,9 +312,7 @@ class Win(CTk):
             json.dump(data, file)
 
     def changeOTExpLim(self):
-        newLimit = self.expenseLimitVar.get()
-
-
+        newLimit = int(self.expenseLimitVar.get())
         budget_id = self.getBudgetID()
 
         try:
@@ -337,7 +340,7 @@ class Win(CTk):
             else:
                 cursor.execute(updateQuery, valuesUQ)
                 conn.commit()
-                messagebox.showinfo('Expense Limit Increased', f'Expense Limit of {budName} has been chnaged to {newLimit}.')
+                messagebox.showinfo('Expense Limit Increased', f'Expense Limit of {budName} has been changed to {newLimit}.')
                 self.setData()
                 self.expenseLimitVar.set(0)
             
@@ -349,6 +352,118 @@ class Win(CTk):
             if conn:
                 conn.close()
 
+    def changeCategory(self):
+        newCatergory = self.chcategory.get()
+        budget_id = self.getBudgetID()
+
+        try:
+            conn = sqlite3.connect(DATABASE)
+            cursor = conn.cursor()
+
+            getQuery = "SELECT budget_amount, budget_name FROM budget WHERE budget_id=?"
+            valuesGQ = (budget_id, )
+
+            cursor.execute(getQuery, valuesGQ)
+            data = cursor.fetchone()
+
+            if data:
+                budAmo, budName = data
+
+            updateQuery = 'UPDATE budget SET budget_category=? WHERE budget_id=?'
+            valuesUQ = (newCatergory, budget_id)
+
+            if newCatergory == '':
+                messagebox.showerror('Invalid Input', 'Please Enter Valid Category Name.')
+            else:
+                cursor.execute(updateQuery, valuesUQ)
+                conn.commit()
+                messagebox.showinfo('Category changed', f'Category of {budName} has been changed to {newCatergory}.')
+                self.setData()
+                self.chcategory.set("")
+            
+
+        except sqlite3.Error as e:
+            messagebox.showerror("SQLite Error", f"{e}")
+
+        finally:
+            if conn:
+                conn.close()
+
+    def increaseBudget(self):
+        newBudget = int(self.inamountVar.get())
+        budget_id = self.getBudgetID()
+
+        try:
+            conn = sqlite3.connect(DATABASE)
+            cursor = conn.cursor()
+
+            getQuery = "SELECT budget_amount, budget_name FROM budget WHERE budget_id=?"
+            valuesGQ = (budget_id, )
+
+            cursor.execute(getQuery, valuesGQ)
+            data = cursor.fetchone()
+
+            if data:
+                budAmo, budName = data
+
+            totalBudAmo = budAmo + newBudget
+
+            updateQuery = 'UPDATE budget SET budget_amount=? WHERE budget_id=?'
+            valuesUQ = (totalBudAmo, budget_id)
+
+            if newBudget == 0:
+                messagebox.showerror('Invalid Input', 'Please Enter Valid Budget amount')
+            else:
+                
+                cursor.execute(updateQuery, valuesUQ)
+                conn.commit()
+                
+                messagebox.showinfo('Budget Increased', f'Budget of {budName} has been inccreased by {newBudget}. Now the total Budget amount is {totalBudAmo}')
+                self.setData()
+                self.inamountVar.set(0)
+            
+
+        except sqlite3.Error as e:
+            messagebox.showerror("SQLite Error (loadBudgetCards)", f"{e}")
+
+        finally:
+            if conn:
+                conn.close()
+
+    def updateAmounts(self, event):
+        amount = int(self.inamountVar.get())
+        budget_id = self.getBudgetID()
+        try:
+            conn = sqlite3.connect(DATABASE)
+            cursor = conn.cursor()
+
+            getQuery = "SELECT budget_amount, budget_status FROM budget WHERE budget_id=?"
+            valuesGQ = (budget_id, )
+
+            cursor.execute(getQuery, valuesGQ)
+            data = cursor.fetchone()
+
+            if data:
+                budAmo, budUsed = data
+
+            
+            if amount != '':
+                totalAmount = budAmo + amount
+                totalRemainingAmount = totalAmount - budUsed
+
+                self.tbudl.configure(text=f'$ {str(totalAmount)}')
+                self.tbrl.configure(text=f'$ {str(totalRemainingAmount)}')
+
+        except sqlite3.Error as e:
+            messagebox.showerror("SQLite Error (loadBudgetCards)", f"{e}")
+
+        finally:
+            if conn:
+                conn.close()
+    
+    def setzero(self, event):
+        if self.inamountVar.get() == '':
+            self.inamountVar.set(0)
 
 if __name__ == '__main__':
     win = Win()
