@@ -211,6 +211,8 @@ class Win(CTk):
             cursor.execute(getQuery, valuesGQ)
             data = cursor.fetchone()
 
+            
+
             print(data)
 
         except sqlite3.Error as e:

@@ -284,7 +284,7 @@ class HomeFrame(CTk.CTkFrame): #(680x480+285+105)
                 for i, budget_info in enumerate(budgets):
                     # print(budget_info)
                     if budget_info:
-                        budget_id, user_id, budget_name, budget_amount, budget_category, budget_status, date, time = budget_info
+                        budget_id, user_id, budget_name, budget_amount, budget_category, budget_status, date, time, expense_limit = budget_info
                         
                         # self.budget_card.refreshButton.configure(command=self.refresh(budget_id))
                     
@@ -468,7 +468,7 @@ class HomeFrame(CTk.CTkFrame): #(680x480+285+105)
 
         name = self.expNameVar.get()
         amount = self.expAmountVar.get()
-
+        explimit = 0
         
 
         try:
@@ -476,26 +476,29 @@ class HomeFrame(CTk.CTkFrame): #(680x480+285+105)
             cursor = conn.cursor()
 
             # Get Used Budget
-            cursor.execute("SELECT budget_amount, budget_status FROM budget WHERE budget_id = ?", (self.budid,))
+            cursor.execute("SELECT budget_amount, budget_status, expense_limit FROM budget WHERE budget_id = ?", (self.budid,))
             result = cursor.fetchone()
 
             if result:
-                budamount, used = result
+                budamount, used, limit = result
 
                 self.leftBudget = budamount - used
-                
-            if amount > self.leftBudget:
+                explimit = limit
+
+            if budamount == used:
+                messagebox.showerror('Budget Not Avialable', 'Your Alloted Budget Amount has been Finished. Your cannot add any more expenses in it. If you want to add more expenses please increase your budget limit in the budget settings.')
+            elif amount > explimit:
+                messagebox.showerror('Expense Limit Exceded', 'Your are Exceeding your one time expense limit.')
+            elif amount > self.leftBudget:
                 messagebox.showerror('Budget Not Available', 'Your are Exceeding your budget limit.')
+            else:
+                if amount < self.leftBudget:
+                    self.addExpense(self.budid, name, amount)
+                elif amount == self.leftBudget:
+                    veri = messagebox.askyesnocancel('Budget Limit', 'If you add this expense your budget will be over are you sure you want to add this budget.')
+                    if veri == True:
+                        self.addExpense(self.budid, name, amount)
 
-            if amount < self.leftBudget:
-                self.addExpense(self.budid, name, amount)
-
-            if amount == self.leftBudget:
-                veri = messagebox.askyesnocancel('Budget Limit', 'If you add this expense your budget will be over are you sure you want to add this budget.')
-                if veri == True:
-                    print('added')
-                if veri == False or veri == None:
-                    pass
 
         except sqlite3.Error as e:
             messagebox.showerror("SQLite Error", f"{e}")
@@ -542,7 +545,7 @@ class HomeFrame(CTk.CTkFrame): #(680x480+285+105)
             date = now.strftime(str(now.day) + '/' + str(now.month) + '/' + str(now.year))
             time = now.strftime(str(now.hour) + ':' + str(now.minute) + ':' + str(now.second))
 
-            values = (user_id, name, amount, used, date, time)
+            values = (user_id, name, amount, used, date, time, amount)
 
             if name == 'Budget Name':
                 name = ''
@@ -551,7 +554,7 @@ class HomeFrame(CTk.CTkFrame): #(680x480+285+105)
                 amount = ''
 
             if name != '' and amount != '':
-                cursor.execute(""" INSERT INTO budget (user_id, budget_name, budget_amount, budget_status, date, time) VALUES (?, ?, ?, ?, ?, ?) """, values)
+                cursor.execute(""" INSERT INTO budget (user_id, budget_name, budget_amount, budget_status, date, time, expense_limit) VALUES (?, ?, ?, ?, ?, ?, ?) """, values)
                 conn.commit()
 
                 messagebox.showinfo('Budget Added', f'Budget Name: {name}\nAmount: ${amount}\n Budget has been added successfully.')

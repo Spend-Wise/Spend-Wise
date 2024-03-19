@@ -7,6 +7,7 @@ CREATE TABLE "budget" (
 	"budget_status"	INTEGER NOT NULL DEFAULT 0,
 	"date"	TEXT,
 	"time"	TEXT,
-	PRIMARY KEY("budget_id" AUTOINCREMENT),
-	FOREIGN KEY("user_id") REFERENCES "registration"("user_id")
+	"expense_limit"	INTEGER NOT NULL,
+	FOREIGN KEY("user_id") REFERENCES "registration"("user_id"),
+	PRIMARY KEY("budget_id" AUTOINCREMENT)
 );
