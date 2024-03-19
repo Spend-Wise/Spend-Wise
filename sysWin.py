@@ -14,6 +14,7 @@ load_dotenv()
 
 DATABASE = os.environ.get("DATABASE")
 JSON_FILE = os.environ.get("JSON_FILE")
+CDJSON_FILE = os.environ.get("CURRENT_DATA_JSON_FILE")
 
 class Win(CTk):
     def __init__(self):
@@ -98,23 +99,29 @@ class Win(CTk):
         self.latestexplabel = CTkLabel(self.expenseDetailsFrame, text='Latest Expense', font=('Kameron', 22, 'bold'), width=450, justify='center')
         self.latestexplabel.place(x=10, y=5)
 
+        self.enameLabel = CTkLabel(self.expenseDetailsFrame, text=f'Name: ', font=('Kameron', 18, 'bold'))
+        self.enameLabel.place(x=10, y=35)
+
+        self.enaml = CTkLabel(self.expenseDetailsFrame, text='----', font=('Kameron', 18, 'bold'), width=280, justify='center')
+        self.enaml.place(x=175, y=35)
+
         self.eamoLabel = CTkLabel(self.expenseDetailsFrame, text=f'Amount: ', font=('Kameron', 18, 'bold'))
-        self.eamoLabel.place(x=10, y=35)
+        self.eamoLabel.place(x=10, y=65)
 
         self.eamol = CTkLabel(self.expenseDetailsFrame, text='----', font=('Kameron', 18, 'bold'), width=280, justify='center')
-        self.eamol.place(x=175, y=35)
+        self.eamol.place(x=175, y=65)
 
         self.edt_label = CTkLabel(self.expenseDetailsFrame, text=f'Date & Time: ', font=('Kameron', 18, 'bold'))
-        self.edt_label.place(x=10, y=65)
+        self.edt_label.place(x=10, y=95)
 
         self.edtl = CTkLabel(self.expenseDetailsFrame, text='DD/MM/YYYY - HH:MM:SS', font=('Kameron', 18, 'bold'), width=280, justify='center')
-        self.edtl.place(x=175, y=65)
+        self.edtl.place(x=175, y=95)
 
         self.ecat_label = CTkLabel(self.expenseDetailsFrame, text=f'Expense Category: ', font=('Kameron', 18, 'bold'))
-        self.ecat_label.place(x=10, y=95)
+        self.ecat_label.place(x=10, y=120)
 
         self.ecatl = CTkLabel(self.expenseDetailsFrame, text='----', font=('Kameron', 18, 'bold'), width=250, justify='center')
-        self.ecatl.place(x=195, y=95)
+        self.ecatl.place(x=195, y=120)
 
         #=====================================================================================
         # increaseBudgetFrame Widgets
@@ -130,14 +137,14 @@ class Win(CTk):
         self.tbudlab = CTkLabel(self.increaseBudgetFrame, text=f'Total Budget: ', font=('Kameron', 18, 'bold'))
         self.tbudlab.place(x=10, y=65)
 
-        self.eamol = CTkLabel(self.increaseBudgetFrame, text='----', font=('Kameron', 18, 'bold'), width=280, justify='center')
-        self.eamol.place(x=175, y=65)
+        self.tbudl = CTkLabel(self.increaseBudgetFrame, text='----', font=('Kameron', 18, 'bold'), width=280, justify='center')
+        self.tbudl.place(x=175, y=65)
 
         self.edt_label = CTkLabel(self.increaseBudgetFrame, text=f'Total Budget Remaining: ', font=('Kameron', 18, 'bold'))
         self.edt_label.place(x=10, y=95)
 
-        self.edtl = CTkLabel(self.increaseBudgetFrame, text='----', font=('Kameron', 18, 'bold'), width=200, justify='center')
-        self.edtl.place(x=250, y=95)
+        self.tbrl = CTkLabel(self.increaseBudgetFrame, text='----', font=('Kameron', 18, 'bold'), width=200, justify='center')
+        self.tbrl.place(x=250, y=95)
 
         self.inBtn = CTkButton(self.increaseBudgetFrame, text='Increase Budget', font=('Kameron', 18, 'bold'), width=450)
         self.inBtn.place(x=10, y=130)
@@ -205,15 +212,52 @@ class Win(CTk):
             conn = sqlite3.connect(DATABASE)
             cursor = conn.cursor()
 
+
+            # Queries and Values
             getQuery = 'SELECT * FROM budget WHERE budget_id=?'
             valuesGQ = (budget_id, )
 
+            #------------------------------------------------------------------------------------------
+
             cursor.execute(getQuery, valuesGQ)
-            data = cursor.fetchone()
+            dataGQ = cursor.fetchone()
 
-            
+            if dataGQ:
+                budgetid, user_id, name, amount, category, used, date, time, expLimit = dataGQ
 
-            print(data)
+                dateTime = f"{date}  -  {time}"
+                remainingBudget = amount - used
+
+                self.namel.configure(text=str(name))
+                self.dtl.configure(text=str(dateTime))
+                self.bal.configure(text=f'$ {str(amount)}')
+                self.brl.configure(text=f'$ {str(remainingBudget)}')
+                self.catl.configure(text=str(category))
+
+                self.setBudJSON(budgetid, user_id, name, amount, category, used, date, time, expLimit)
+                #-------------------------------------------------------------------------------------
+
+                ExpQuery = 'SELECT * FROM expense WHERE budget_id = ? ORDER BY date DESC, time DESC LIMIT 1'
+                valuesEQ= (budgetid, )
+
+                cursor.execute(ExpQuery, valuesEQ)
+                dataEQ = cursor.fetchone()
+
+                # print(dataEQ)
+
+                if dataEQ:
+                    expID, budID, expName, expAmo, expCat, expDt, expTm = dataEQ
+
+                    exDateTime = f'{expDt}  -  {expTm}'
+                    
+                    self.enaml.configure(text=str(expName))
+                    self.eamol.configure(text=f'$ {str(expAmo)}')
+                    self.edtl.configure(text=str(exDateTime))
+                    self.ecatl.configure(text=str(expCat))
+
+                    self.setExpJSON(expID, budID, expName, expAmo, expCat, expDt, expTm)                
+
+            # print(data)
 
         except sqlite3.Error as e:
             messagebox.showerror("SQLite Error (loadBudgetCards)", f"{e}")
@@ -222,8 +266,37 @@ class Win(CTk):
             if conn:
                 conn.close()
 
+    def setBudJSON(self, budget_id, user_id, budName, budAmo, budCat, budUsed, budDate, budTime, budEL):
+        with open(CDJSON_FILE, 'r') as file:
+            data = json.load(file)
+            
+        data['budget']['budget_id'] = budget_id
+        data['budget']['user_id'] = user_id
+        data['budget']['budget_name'] = budName
+        data['budget']['budget_amount'] = budAmo
+        data['budget']['budget_category'] = budCat
+        data['budget']['budget_status'] = budUsed
+        data['budget']['date'] = budDate
+        data['budget']['time'] = budTime
+        data['budget']['expense_limit'] = budEL
+        
+        with open(CDJSON_FILE, 'w') as file:
+            json.dump(data, file)
 
-
+    def setExpJSON(self, expID, budID, expName, expAmo, expCate, expDate, expTime):
+        with open(CDJSON_FILE, 'r') as file:
+            data = json.load(file)
+            
+        data['latestExpense']['expense_id'] = expID
+        data['latestExpense']['budget_id'] = budID
+        data['latestExpense']['expense_name'] = expName
+        data['latestExpense']['expense_amount'] = expAmo
+        data['latestExpense']['expense_category'] = expCate
+        data['latestExpense']['date'] = expDate
+        data['latestExpense']['time'] = expTime
+        
+        with open(CDJSON_FILE, 'w') as file:
+            json.dump(data, file)
 
 if __name__ == '__main__':
     win = Win()
