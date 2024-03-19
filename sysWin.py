@@ -21,7 +21,7 @@ class Win(CTk):
         super().__init__()
 
         self.title('Budget Settings')
-        self.geometry('1000x580+50+50')
+        self.geometry('1000x610+50+50')
         self.resizable(False, False)
         self.focus_force()
 
@@ -41,7 +41,7 @@ class Win(CTk):
         self.expenseDetailsFrame = CTkFrame(self, width=470, height=150)
         self.expenseDetailsFrame.place(x=15, y=285)
 
-        self.expenseLimitFrame = CTkFrame(self, width=470, height=115)
+        self.expenseLimitFrame = CTkFrame(self, width=470, height=145)
         self.expenseLimitFrame.place(x=15, y=450)
         
         self.increaseBudgetFrame = CTkFrame(self, width=470, height=170)
@@ -50,7 +50,7 @@ class Win(CTk):
         self.budgetCategoryFrame = CTkFrame(self, width=470, height=115)
         self.budgetCategoryFrame.place(x=500, y=265)
 
-        self.shareExportFrame = CTkFrame(self, width=470, height=170)
+        self.shareExportFrame = CTkFrame(self, width=470, height=200)
         self.shareExportFrame.place(x=500, y=395)
         
         #====================================================================================
@@ -168,14 +168,20 @@ class Win(CTk):
         self.cate_label = CTkLabel(self.expenseLimitFrame, text='One Time Expesense Limit', font=('Kameron', 22, 'bold'), width=450, justify='center')
         self.cate_label.place(x=10, y=5)
 
+        self.celt_label = CTkLabel(self.expenseLimitFrame, text=f'Current Expense Limit: ', font=('Kameron', 18, 'bold'))
+        self.celt_label.place(x=10, y=35)
+
+        self.cell = CTkLabel(self.expenseLimitFrame, text='----', font=('Kameron', 18, 'bold'), width=200, justify='center')
+        self.cell.place(x=250, y=35)
+
         self.categlabel = CTkLabel(self.expenseLimitFrame, text=f'Limit: ', font=('Kameron', 18, 'bold'))
-        self.categlabel.place(x=10, y=35)
+        self.categlabel.place(x=10, y=65)
 
         self.cateEnt = CTkEntry(self.expenseLimitFrame, width=190, font=('Kameron', 18), textvariable=self.expenseLimitVar)
-        self.cateEnt.place(x=250, y=35)
+        self.cateEnt.place(x=250, y=65)
 
-        self.inBtn = CTkButton(self.expenseLimitFrame, text='Set Limit', font=('Kameron', 18, 'bold'), width=450)
-        self.inBtn.place(x=10, y=75)
+        self.inBtn = CTkButton(self.expenseLimitFrame, text='Set Limit', font=('Kameron', 18, 'bold'), width=450, command=self.changeOTExpLim)
+        self.inBtn.place(x=10, y=105)
 
         #=====================================================================================
         # shareExportFrame Widgets
@@ -233,6 +239,8 @@ class Win(CTk):
                 self.bal.configure(text=f'$ {str(amount)}')
                 self.brl.configure(text=f'$ {str(remainingBudget)}')
                 self.catl.configure(text=str(category))
+
+                self.cell.configure(text=f'$ {str(expLimit)}')
 
                 self.setBudJSON(budgetid, user_id, name, amount, category, used, date, time, expLimit)
                 #-------------------------------------------------------------------------------------
@@ -297,6 +305,50 @@ class Win(CTk):
         
         with open(CDJSON_FILE, 'w') as file:
             json.dump(data, file)
+
+    def changeOTExpLim(self):
+        newLimit = self.expenseLimitVar.get()
+
+
+        budget_id = self.getBudgetID()
+
+        try:
+            conn = sqlite3.connect(DATABASE)
+            cursor = conn.cursor()
+
+            getQuery = "SELECT budget_amount, budget_name FROM budget WHERE budget_id=?"
+            valuesGQ = (budget_id, )
+
+            cursor.execute(getQuery, valuesGQ)
+            data = cursor.fetchone()
+
+            if data:
+                budAmo, budName = data
+
+            updateQuery = 'UPDATE budget SET expense_limit=? WHERE budget_id=?'
+            valuesUQ = (newLimit, budget_id)
+
+            
+            if newLimit == '':
+                pass
+
+            if newLimit > int(budAmo):
+                messagebox.showerror('Invalid Input', 'The value you have eneterd is more than the Alloted budget it self. Please enter value less than the Alloted Budget.')
+            else:
+                cursor.execute(updateQuery, valuesUQ)
+                conn.commit()
+                messagebox.showinfo('Expense Limit Increased', f'Expense Limit of {budName} has been chnaged to {newLimit}.')
+                self.setData()
+                self.expenseLimitVar.set(0)
+            
+
+        except sqlite3.Error as e:
+            messagebox.showerror("SQLite Error (loadBudgetCards)", f"{e}")
+
+        finally:
+            if conn:
+                conn.close()
+
 
 if __name__ == '__main__':
     win = Win()

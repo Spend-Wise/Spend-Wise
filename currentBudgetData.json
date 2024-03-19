@@ -5,18 +5,18 @@
         "budget_name": "sd",
         "budget_amount": 45000,
         "budget_category": null,
-        "budget_status": 5000,
+        "budget_status": 5780,
         "date": "19/3/2024",
         "time": "11:27:50",
-        "expense_limit": 45000
+        "expense_limit": 7500
     },
     "latestExpense": {
-        "expense_id": 6,
+        "expense_id": 7,
         "budget_id": 2,
-        "expense_name": "dsvd",
-        "expense_amount": 5000,
+        "expense_name": "fsfv",
+        "expense_amount": 780,
         "expense_category": null,
         "date": "19/3/2024",
-        "time": "11:41:37"
+        "time": "12:46:5"
     }
 }
