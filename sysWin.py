@@ -21,7 +21,7 @@ class Win(CTk):
         super().__init__()
 
         self.title('Budget Settings')
-        self.geometry('1000x610+50+50')
+        self.geometry('985x610+50+50')
         self.resizable(False, False)
         self.focus_force()
 
@@ -32,7 +32,7 @@ class Win(CTk):
         self.formats = ['Select Format', 'JSON', 'Excel File', 'CSV']
 
         # Frames
-        self.titleFrame = CTkFrame(self, width=970, height=50)
+        self.titleFrame = CTkFrame(self, width=955, height=50)
         self.titleFrame.place(x=15, y=15)
 
         self.budgetDetailsFrame = CTkFrame(self, width=470, height=190)
@@ -55,7 +55,7 @@ class Win(CTk):
         
         #====================================================================================
         # titleFrame Widgets
-        self.title = CTkLabel(self.titleFrame, width=960, height=50, text='Budget Settings', font=('Kameron', 25, 'bold'))
+        self.title = CTkLabel(self.titleFrame, width=945, height=50, text='Budget Settings', font=('Kameron', 25, 'bold'))
         self.title.place(x=5, y=0)
 
         #====================================================================================
@@ -185,7 +185,7 @@ class Win(CTk):
 
         #=====================================================================================
         # shareExportFrame Widgets
-        self.se_label = CTkLabel(self.shareExportFrame, text='Share & Export Budget', font=('Kameron', 22, 'bold'), width=450, justify='center')
+        self.se_label = CTkLabel(self.shareExportFrame, text='Budget Options', font=('Kameron', 22, 'bold'), width=450, justify='center')
         self.se_label.place(x=10, y=5)
 
         self.expaslabel = CTkLabel(self.shareExportFrame, text=f'Export as: ', font=('Kameron', 18, 'bold'))
@@ -196,12 +196,14 @@ class Win(CTk):
 
         self.sd = CTkScrollableDropdownFrame(self.expasEnt, values=self.formats, justify="left", button_color="transparent", autocomplete=True, x=-57.5, y=-50)
 
-
         self.expBtn = CTkButton(self.shareExportFrame, text='Export Budget', font=('Kameron', 18, 'bold'), width=450)
         self.expBtn.place(x=10, y=85)
 
         self.shaBtn = CTkButton(self.shareExportFrame, text='Share Budget', font=('Kameron', 18, 'bold'), width=450)
         self.shaBtn.place(x=10, y=125)
+
+        self.archBtn = CTkButton(self.shareExportFrame, text='Archive Budget', font=('Kameron', 18, 'bold'), width=450, fg_color='#1f8d3b', hover_color='#155c21', command=lambda budget_id=self.getBudgetID(): self.archive(budget_id) )
+        self.archBtn.place(x=10, y=165)
 
         # Funciton Calls
         self.setData()
@@ -219,6 +221,7 @@ class Win(CTk):
     
     def setData(self):
         budget_id = self.getBudgetID()
+        self.setArchive(budget_id)
         try:
             conn = sqlite3.connect(DATABASE)
             cursor = conn.cursor()
@@ -234,7 +237,7 @@ class Win(CTk):
             dataGQ = cursor.fetchone()
 
             if dataGQ:
-                budgetid, user_id, name, amount, category, used, date, time, expLimit = dataGQ
+                budgetid, user_id, name, amount, category, used, date, time, expLimit, arch = dataGQ
 
                 dateTime = f"{date}  -  {time}"
                 remainingBudget = amount - used
@@ -247,7 +250,7 @@ class Win(CTk):
 
                 self.cell.configure(text=f'$ {str(expLimit)}')
 
-                self.setBudJSON(budgetid, user_id, name, amount, category, used, date, time, expLimit)
+                self.setBudJSON(budgetid, user_id, name, amount, category, used, date, time, expLimit, arch)
                 #-------------------------------------------------------------------------------------
 
                 ExpQuery = 'SELECT * FROM expense WHERE budget_id = ? ORDER BY date DESC, time DESC LIMIT 1'
@@ -279,7 +282,7 @@ class Win(CTk):
             if conn:
                 conn.close()
 
-    def setBudJSON(self, budget_id, user_id, budName, budAmo, budCat, budUsed, budDate, budTime, budEL):
+    def setBudJSON(self, budget_id, user_id, budName, budAmo, budCat, budUsed, budDate, budTime, budEL, budArch):
         with open(CDJSON_FILE, 'r') as file:
             data = json.load(file)
             
@@ -292,6 +295,7 @@ class Win(CTk):
         data['budget']['date'] = budDate
         data['budget']['time'] = budTime
         data['budget']['expense_limit'] = budEL
+        data['budget']['archived'] = budArch
         
         with open(CDJSON_FILE, 'w') as file:
             json.dump(data, file)
@@ -464,6 +468,94 @@ class Win(CTk):
     def setzero(self, event):
         if self.inamountVar.get() == '':
             self.inamountVar.set(0)
+
+    def archive(self, budget_id):
+        archY = 'yes'
+        archN = 'no'
+        try:
+            conn = sqlite3.connect(DATABASE)
+            cursor = conn.cursor()
+
+            getQuery = "SELECT archived, budget_name FROM budget WHERE budget_id=?"
+            valuesGQ = (budget_id, )
+
+            cursor.execute(getQuery, valuesGQ)
+            data = cursor.fetchone()
+
+            if data:
+                archived, budName = data
+
+                if archived == 'no':
+                    setQuery = "UPDATE budget SET archived=? WHERE budget_id=?"
+                    valuesSQ = (archY, budget_id, )
+
+                    cursor.execute(setQuery, valuesSQ)
+                    conn.commit()
+
+                    with open(CDJSON_FILE, 'r') as file:
+                        data = json.load(file)
+                    
+                    data['budget']['archived'] = 'yes'
+                    
+                    with open(CDJSON_FILE, 'w') as file:
+                        json.dump(data, file)
+
+                    messagebox.showinfo('Budget Archived', f'{budName} has been ARCHIVED. To see the archived budgets please click on the Archived Budgets Tab in the navigation menu.')
+                    self.archBtn.configure(text='Unarchive Budget')
+                    sys.exit()
+
+                else:
+                    setQuery = "UPDATE budget SET archived=? WHERE budget_id=?"
+                    valuesSQ = (archN, budget_id, )
+
+                    with open(CDJSON_FILE, 'r') as file:
+                        data = json.load(file)
+                    
+                    data['budget']['archived'] = 'no'
+                    
+                    with open(CDJSON_FILE, 'w') as file:
+                        json.dump(data, file)
+
+                    cursor.execute(setQuery, valuesSQ)
+                    conn.commit()
+                    messagebox.showinfo('Budget Archived', f'{budName} has been UNARCHIVED.')
+                    self.archBtn.configure(text='Archive Budget')
+                    sys.exit()
+
+        except sqlite3.Error as e:
+            messagebox.showerror("SQLite Error (loadBudgetCards)", f"{e}")
+
+        finally:
+            if conn:
+                conn.close()
+    
+    def setArchive(self, budget_id):
+        try:
+            conn = sqlite3.connect(DATABASE)
+            cursor = conn.cursor()
+
+            getQuery = "SELECT archived, budget_name FROM budget WHERE budget_id=?"
+            valuesGQ = (budget_id, )
+
+            cursor.execute(getQuery, valuesGQ)
+            data = cursor.fetchone()
+
+            if data:
+                archived, budName = data
+
+                if archived == 'no':
+                    self.archBtn.configure(text='Archive Budget')
+
+                else:
+                    self.archBtn.configure(text='Unarchive Budget')
+            
+
+        except sqlite3.Error as e:
+            messagebox.showerror("SQLite Error (loadBudgetCards)", f"{e}")
+
+        finally:
+            if conn:
+                conn.close()
 
 if __name__ == '__main__':
     win = Win()
