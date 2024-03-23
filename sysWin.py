@@ -196,7 +196,7 @@ class Win(CTk):
 
         self.sd = CTkScrollableDropdownFrame(self.expasEnt, values=self.formats, justify="left", button_color="transparent", autocomplete=True, x=-57.5, y=-50)
 
-        self.expBtn = CTkButton(self.shareExportFrame, text='Export Budget', font=('Kameron', 18, 'bold'), width=450)
+        self.expBtn = CTkButton(self.shareExportFrame, text='Export Budget', font=('Kameron', 18, 'bold'), width=450, command=self.exportBudget)
         self.expBtn.place(x=10, y=85)
 
         self.shaBtn = CTkButton(self.shareExportFrame, text='Share Budget', font=('Kameron', 18, 'bold'), width=450)
@@ -549,6 +549,59 @@ class Win(CTk):
                 else:
                     self.archBtn.configure(text='Unarchive Budget')
             
+
+        except sqlite3.Error as e:
+            messagebox.showerror("SQLite Error (loadBudgetCards)", f"{e}")
+
+        finally:
+            if conn:
+                conn.close()
+
+    def exportBudget(self):
+        exportType = self.getExportType()
+
+        if exportType == 'JSON':
+            self.JSONExport()
+
+    def getExportType(self):
+        exportType = self.expasEnt.get()
+        
+        if exportType == 'Select Format':
+            messagebox.showerror('Invalid Export Format', 'Please select an Valid export Format.')
+        else:
+            return exportType
+
+    def JSONExport(self):
+        budget_id = self.getBudgetID()
+        try:
+            conn = sqlite3.connect(DATABASE)
+            cursor = conn.cursor()
+
+            cursor.execute("SELECT * FROM budget WHERE budget_id = ?", (budget_id,))
+            budget_fields = [description[0] for description in cursor.description] 
+            budget_data = cursor.fetchone()
+
+            cursor.execute("SELECT * FROM expense WHERE budget_id = ?", (budget_id,))
+            expense_fields = [description[0] for description in cursor.description]  # Get the field names
+            expense_data = cursor.fetchall()
+
+            budget_dict = {field: value for field, value in zip(budget_fields, budget_data)}
+            expenses_list = [{field: value for field, value in zip(expense_fields, expense)} for expense in expense_data]
+
+            data_to_export = {
+                "budget": budget_dict,
+                "expenses": expenses_list
+            }
+
+            folder_path = 'exports/json'
+            os.makedirs(folder_path, exist_ok=True)
+
+            filePath = os.path.join(folder_path, f"EXPD_{budget_id}.json")
+            
+            with open(filePath, "w") as json_file:
+                json.dump(data_to_export, json_file, indent=4)
+
+                messagebox.showinfo('Budget Exported', 'Budget has been successfully Exported.')
 
         except sqlite3.Error as e:
             messagebox.showerror("SQLite Error (loadBudgetCards)", f"{e}")
