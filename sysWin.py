@@ -1,8 +1,10 @@
 import os
+import csv
 import json
 
 import sqlite3
 
+import pandas as pd
 
 from dotenv import load_dotenv
 
@@ -563,6 +565,12 @@ class Win(CTk):
         if exportType == 'JSON':
             self.JSONExport()
 
+        elif exportType == 'CSV':
+            self.CSVExport()
+
+        elif exportType == 'Excel File':
+            self.excelExport()
+
     def getExportType(self):
         exportType = self.expasEnt.get()
         
@@ -601,7 +609,7 @@ class Win(CTk):
             with open(filePath, "w") as json_file:
                 json.dump(data_to_export, json_file, indent=4)
 
-                messagebox.showinfo('Budget Exported', 'Budget has been successfully Exported.')
+                messagebox.showinfo('Budget Exported', 'Budget has been successfully Exported as JSON file.')
 
         except sqlite3.Error as e:
             messagebox.showerror("SQLite Error (loadBudgetCards)", f"{e}")
@@ -609,6 +617,88 @@ class Win(CTk):
         finally:
             if conn:
                 conn.close()
+
+    def CSVExport(self):
+        budget_id = self.getBudgetID()
+        try:
+            conn = sqlite3.connect(DATABASE)
+            cursor = conn.cursor()
+
+            cursor.execute("SELECT * FROM budget WHERE budget_id = ?", (budget_id,))
+            budget_fields = [description[0] for description in cursor.description] 
+            budget_data = cursor.fetchone()
+
+            cursor.execute("SELECT * FROM expense WHERE budget_id = ?", (budget_id,))
+            expense_fields = [description[0] for description in cursor.description]  # Get the field names
+            expense_data = cursor.fetchall()
+
+            budget_dict = {field: value for field, value in zip(budget_fields, budget_data)}
+            expenses_list = [{field: value for field, value in zip(expense_fields, expense)} for expense in expense_data]
+
+            folder_path = f'exports/csv/{budget_id}'
+            os.makedirs(folder_path, exist_ok=True)
+
+            budget_file_path = os.path.join(folder_path, f"EXPBD_{budget_id}.csv")
+            expenses_file_path = os.path.join(folder_path, f"EXPED_{budget_id}.csv")
+
+            # Write budget data to CSV
+            with open(budget_file_path, 'w', newline='') as budget_file:
+                writer = csv.DictWriter(budget_file, fieldnames=budget_fields)
+                writer.writeheader()
+                writer.writerow(budget_dict)
+
+            # Write expenses data to CSV
+            with open(expenses_file_path, 'w', newline='') as expenses_file:
+                writer = csv.DictWriter(expenses_file, fieldnames=expense_fields)
+                writer.writeheader()
+                writer.writerows(expenses_list)
+
+            messagebox.showinfo('Budget Exported', 'Budget has been successfully Exported as CSV.')
+
+        except sqlite3.Error as e:
+            messagebox.showerror("SQLite Error (loadBudgetCards)", f"{e}")
+
+        finally:
+            if conn:
+                conn.close()
+
+    def excelExport(self):
+        budget_id = self.getBudgetID()
+        conn = sqlite3.connect(DATABASE)
+
+    # Query to select budget data associated with the given budget_id
+        query_budget = f"SELECT * FROM budget WHERE budget_id = {budget_id}"
+        
+        # Read budget data from SQLite into a DataFrame
+        df_budget = pd.read_sql_query(query_budget, conn)
+
+        # Check if the budget exists
+        if df_budget.empty:
+            print("No budget found for the provided budget_id.")
+            return
+
+        # Query to select expense data associated with the current budget_id
+        query_expense = f"SELECT * FROM expense WHERE budget_id = {budget_id}"
+        
+        # Read expense data from SQLite into a DataFrame
+        df_expense = pd.read_sql_query(query_expense, conn)
+
+        # Define the export folder
+        export_folder = 'exports/excel'
+
+        # Create the export folder if it doesn't exist
+        if not os.path.exists(export_folder):
+            os.makedirs(export_folder)
+
+        # Write DataFrames to an Excel file
+        with pd.ExcelWriter(f'{export_folder}/EXPD_{budget_id}.xlsx') as writer:
+            df_budget.to_excel(writer, sheet_name='Budget', index=False)
+            df_expense.to_excel(writer, sheet_name='Expense', index=False)
+
+        messagebox.showinfo('Budget Exported', 'Budget has been successfully Exported as Excel File.')
+
+        # Close connection to the database
+        conn.close()
 
 if __name__ == '__main__':
     win = Win()
