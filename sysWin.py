@@ -8,6 +8,7 @@ import pandas as pd
 
 from dotenv import load_dotenv
 
+from PIL import Image
 from customtkinter import *
 from CTkScrollableDropdown import *
 from tkinter import ttk, messagebox
@@ -32,6 +33,14 @@ class Win(CTk):
         self.expenseLimitVar = StringVar()
 
         self.formats = ['Select Format', 'JSON', 'Excel File', 'CSV']
+
+        # Images
+        image_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "assets")
+
+        edit_light = Image.open(os.path.join(image_path, "edit_light.png"))
+        edit_dark = Image.open(os.path.join(image_path, "edit_dark.png"))
+
+        self.editImg = CTkImage(light_image=edit_light, dark_image=edit_dark, size=(20, 20))
 
         # Frames
         self.titleFrame = CTkFrame(self, width=955, height=50)
@@ -70,6 +79,9 @@ class Win(CTk):
 
         self.namel = CTkLabel(self.budgetDetailsFrame, text='----', font=('Kameron', 18, 'bold'), width=280, justify='center')
         self.namel.place(x=175, y=35)
+
+        # self.ednm = CTkButton(self.budgetDetailsFrame, width=30, text='', image=self.editImg, command=self.editBudName)
+        # self.ednm.place(x=425, y=35)
 
         self.dt_label = CTkLabel(self.budgetDetailsFrame, text=f'Date & Time: ', font=('Kameron', 18, 'bold'))
         self.dt_label.place(x=10, y=65)
@@ -246,11 +258,11 @@ class Win(CTk):
 
                 self.namel.configure(text=str(name))
                 self.dtl.configure(text=str(dateTime))
-                self.bal.configure(text=f'$ {str(amount)}')
-                self.brl.configure(text=f'$ {str(remainingBudget)}')
+                self.bal.configure(text=f"${'{:,}'.format(amount)}")
+                self.brl.configure(text=f"${'{:,}'.format(remainingBudget)}")
                 self.catl.configure(text=str(category))
 
-                self.cell.configure(text=f'$ {str(expLimit)}')
+                self.cell.configure(text=f"${'{:,}'.format(expLimit)}")
 
                 self.setBudJSON(budgetid, user_id, name, amount, category, used, date, time, expLimit, arch)
                 #-------------------------------------------------------------------------------------
@@ -269,7 +281,7 @@ class Win(CTk):
                     exDateTime = f'{expDt}  -  {expTm}'
                     
                     self.enaml.configure(text=str(expName))
-                    self.eamol.configure(text=f'$ {str(expAmo)}')
+                    self.eamol.configure(text=f"${'{:,}'.format(expAmo)}")
                     self.edtl.configure(text=str(exDateTime))
                     self.ecatl.configure(text=str(expCat))
 
@@ -278,7 +290,7 @@ class Win(CTk):
             # print(data)
 
         except sqlite3.Error as e:
-            messagebox.showerror("SQLite Error (loadBudgetCards)", f"{e}")
+            messagebox.showerror("SQLite Error", f"{e}")
 
         finally:
             if conn:
@@ -352,7 +364,7 @@ class Win(CTk):
             
 
         except sqlite3.Error as e:
-            messagebox.showerror("SQLite Error (loadBudgetCards)", f"{e}")
+            messagebox.showerror("SQLite Error", f"{e}")
 
         finally:
             if conn:
@@ -430,7 +442,7 @@ class Win(CTk):
             
 
         except sqlite3.Error as e:
-            messagebox.showerror("SQLite Error (loadBudgetCards)", f"{e}")
+            messagebox.showerror("SQLite Error", f"{e}")
 
         finally:
             if conn:
@@ -457,11 +469,11 @@ class Win(CTk):
                 totalAmount = budAmo + amount
                 totalRemainingAmount = totalAmount - budUsed
 
-                self.tbudl.configure(text=f'$ {str(totalAmount)}')
-                self.tbrl.configure(text=f'$ {str(totalRemainingAmount)}')
+                self.tbudl.configure(text=f"${'{:,}'.format(totalAmount)}")
+                self.tbrl.configure(text=f"${'{:,}'.format(totalRemainingAmount)}")
 
         except sqlite3.Error as e:
-            messagebox.showerror("SQLite Error (loadBudgetCards)", f"{e}")
+            messagebox.showerror("SQLite Error", f"{e}")
 
         finally:
             if conn:
@@ -525,7 +537,7 @@ class Win(CTk):
                     sys.exit()
 
         except sqlite3.Error as e:
-            messagebox.showerror("SQLite Error (loadBudgetCards)", f"{e}")
+            messagebox.showerror("SQLite Error", f"{e}")
 
         finally:
             if conn:
@@ -553,11 +565,17 @@ class Win(CTk):
             
 
         except sqlite3.Error as e:
-            messagebox.showerror("SQLite Error (loadBudgetCards)", f"{e}")
+            messagebox.showerror("SQLite Error", f"{e}")
 
         finally:
             if conn:
                 conn.close()
+
+    def add_zero(self, number):
+        if len(str(number).split('.')[0]) == 1:
+            return "0" + str(number)
+        else:
+            return str(number)
 
     def exportBudget(self):
         exportType = self.getExportType()
@@ -612,7 +630,7 @@ class Win(CTk):
                 messagebox.showinfo('Budget Exported', 'Budget has been successfully Exported as JSON file.')
 
         except sqlite3.Error as e:
-            messagebox.showerror("SQLite Error (loadBudgetCards)", f"{e}")
+            messagebox.showerror("SQLite Error", f"{e}")
 
         finally:
             if conn:
@@ -656,7 +674,7 @@ class Win(CTk):
             messagebox.showinfo('Budget Exported', 'Budget has been successfully Exported as CSV.')
 
         except sqlite3.Error as e:
-            messagebox.showerror("SQLite Error (loadBudgetCards)", f"{e}")
+            messagebox.showerror("SQLite Error", f"{e}")
 
         finally:
             if conn:
@@ -665,8 +683,6 @@ class Win(CTk):
     def excelExport(self):
         budget_id = self.getBudgetID()
         conn = sqlite3.connect(DATABASE)
-
-    # Query to select budget data associated with the given budget_id
         query_budget = f"SELECT * FROM budget WHERE budget_id = {budget_id}"
         
         # Read budget data from SQLite into a DataFrame
@@ -699,6 +715,41 @@ class Win(CTk):
 
         # Close connection to the database
         conn.close()
+
+    # def editBudName(self):
+    #     budget_id = self.getBudgetID()
+        
+    #     dialog = CTkInputDialog(text="Type the New Budget Name:", title="Edit Budget Name", font=('Kameron', 20, 'bold'))
+    #     newName = dialog.get_input()
+
+    #     if newName == '':
+    #         messagebox.showerror('Invalid Input', 'Please enter a Valid Name')
+
+    #     try:
+    #         conn = sqlite3.connect(DATABASE)
+    #         cursor = conn.cursor()
+
+    #         update_query = """
+    #         UPDATE budget
+    #         SET budget_name = ?
+    #         WHERE budget_id = ?;
+    #         """
+    #         values = (newName, budget_id, )
+    #         cursor.execute(update_query, values)
+
+    #         conn.commit()
+    #         messagebox.showinfo("Budget Name Updated", f"Budget Name updated to {newName}")
+
+    #         # Update the displayed email in the GUI
+    #         self.nameLabel.configure(text=newName)
+
+    #     except sqlite3.Error as e:
+    #         messagebox.showerror("SQLite Error", f"{e}")
+
+    #     finally:
+    #         if conn:
+    #             conn.close()
+
 
 if __name__ == '__main__':
     win = Win()
