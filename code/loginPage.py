@@ -226,7 +226,7 @@ class LoginPage(CTk.CTk):
                 if tfa_tog == "on":
                     self.TFA(self.current_user_id)
                 else:
-                    subprocess.run(["python", "mainPage.py"])  
+                    subprocess.run(["python", "mainPage.py"])
                     sys.exit()
             else:
                 messagebox.showerror("Login Failed", "Invalid user ID, username, or password.")

@@ -905,3 +905,7 @@ class UserVerification(CTk.CTkToplevel):
 
     def doItLater(self):
         self.loginPage(True)
+
+if __name__ == "__main__":
+    app = RegisterPage()
+    app.mainloop()

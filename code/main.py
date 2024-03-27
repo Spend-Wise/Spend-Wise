@@ -23,9 +23,7 @@ def on_keyboard_event(event):
 
 def main():
     if database_structure == True:
-        app = RegisterPage()
-        keyboard.on_press(on_keyboard_event)
-        app.mainloop()
+        subprocess.run(["python", "startPage.py"])
 
 
 
