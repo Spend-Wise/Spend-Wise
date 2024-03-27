@@ -5,9 +5,7 @@ import subprocess
 import tkinter as tk
 
 from dotenv import load_dotenv
-
 from database_utils import ensure_database_structure
-
 from registerPage import RegisterPage
 
 load_dotenv()

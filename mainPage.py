@@ -8,6 +8,7 @@ import sqlite3
 
 from tkinter import *
 from CTkScrollableDropdown import *
+from CTkXYFrame import *
 
 from PIL import Image
 from dotenv import load_dotenv
@@ -18,6 +19,7 @@ from datetime import datetime as dt
 
 from AddPlaceHolder import *
 from CTkTable import *
+from CTkMenuBar import *
 
 import tkinter as tk
 import customtkinter as CTk
@@ -35,6 +37,7 @@ EMAIL = os.environ.get("EMAIL")
 PASSWORD = os.environ.get("PASSWORD")
 
 JSON_FILE = os.environ.get('JSON_FILE')
+UTJSON_FILE = os.environ.get('USER_TOTAL_JSON_FILE')
 
 # Frames
 class NavigationFrame(CTk.CTkFrame):
@@ -59,12 +62,16 @@ class NavigationFrame(CTk.CTkFrame):
         archive_light = Image.open(os.path.join(image_path, "archive_light.png"))
         archive_dark = Image.open(os.path.join(image_path, "archive_dark.png"))
 
+        close_light = Image.open(os.path.join(image_path, "close_light.png"))
+        close_dark = Image.open(os.path.join(image_path, "close_dark.png"))
+
         self.navigationImg = CTk.CTkImage(light_image=navigation_light, dark_image=navigation_dark, size=(20, 20))
         
         self.homeImg = CTk.CTkImage(light_image=home_light, dark_image=home_dark, size=(20, 20))
         self.profileImg = CTk.CTkImage(light_image=profile_light, dark_image=profile_dark, size=(20, 20))
         self.settingsImg = CTk.CTkImage(light_image=settings_light, dark_image=settings_dark, size=(20, 20))
         self.archiveImg = CTk.CTkImage(light_image=archive_light, dark_image=archive_dark, size=(20, 20))
+        self.closeImg = CTk.CTkImage(light_image=close_light, dark_image=close_dark, size=(20, 20))
         
         #===============================
         self.title = CTk.CTkLabel(self, text='  Navigation Menu', font=('Kameron', 22, "bold"), width=230, height=40, image=self.navigationImg, compound='left')
@@ -75,14 +82,14 @@ class NavigationFrame(CTk.CTkFrame):
         self.home_btn = CTk.CTkButton(self, width=230, height=40, border_spacing=10, font=('Kameron', 20,), text="  Home", fg_color="transparent", text_color=("gray10", "gray90"), hover_color=("gray70", "gray30"), anchor="w", command=lambda: self.button_pressed("home"), image=self.homeImg)
         self.home_btn.place(x=10, y=60)
 
-        self.profile_btn = CTk.CTkButton(self, width=230, height=40, border_spacing=10, font=('Kameron', 20,), text="   Profile", fg_color="transparent", text_color=("gray10", "gray90"), hover_color=("gray70", "gray30"), anchor="w", command=lambda: self.button_pressed("profile"), image=self.profileImg)
-        self.profile_btn.place(x=10, y=110)
+        self.close_btn = CTk.CTkButton(self, width=230, height=40, border_spacing=10, font=('Kameron', 20,), text="  Closed", fg_color="transparent", text_color=("gray10", "gray90"), hover_color=("gray70", "gray30"), anchor="w", command=lambda: self.button_pressed("closed"), image=self.closeImg)
+        self.close_btn.place(x=10, y=110)
+
+        self.archieve_btn = CTk.CTkButton(self, width=230, height=40, border_spacing=10, font=('Kameron', 20,), text="  Archived", fg_color="transparent", text_color=("gray10", "gray90"), hover_color=("gray70", "gray30"), anchor="w", command=lambda: self.button_pressed("archive"), image=self.archiveImg)
+        self.archieve_btn.place(x=10, y=160)
 
         self.settings_btn = CTk.CTkButton(self, width=230, height=40, border_spacing=10, font=('Kameron', 20,), text="  Settings", fg_color="transparent", text_color=("gray10", "gray90"), hover_color=("gray70", "gray30"), anchor="w", command=lambda: self.button_pressed("settings"), image=self.settingsImg)
         self.settings_btn.place(x=10, y=420)
-
-        self.archieve_btn = CTk.CTkButton(self, width=230, height=40, border_spacing=10, font=('Kameron', 20,), text="  Archived Budgets", fg_color="transparent", text_color=("gray10", "gray90"), hover_color=("gray70", "gray30"), anchor="w", command=lambda: self.button_pressed("archive"), image=self.archiveImg)
-        self.archieve_btn.place(x=10, y=160)
 
         self.button_callback = button_callback
 
@@ -293,10 +300,10 @@ class HomeFrame(CTk.CTkFrame): #(680x480+285+105)
                 for i, budget_info in enumerate(budgets):
                     # print(budget_info)
                     if budget_info:
-                        budget_id, user_id, budget_name, budget_amount, budget_category, budget_status, date, time, expense_limit, archived = budget_info
+                        budget_id, user_id, budget_name, budget_amount, budget_category, budget_status, date, time, expense_limit, archived, closed, close_date, close_time = budget_info
                         
                         # self.budget_card.refreshButton.configure(command=self.refresh(budget_id))
-                        if archived == 'no':
+                        if archived == 'no' and closed == 'no':
                             row_num = i // 2  # Two cards per row
                             col_num = i % 2   # 0 or 1 for left or right column
                             
@@ -390,14 +397,15 @@ class HomeFrame(CTk.CTkFrame): #(680x480+285+105)
 
             user_id = userid
 
-            cursor.execute("SELECT archived, budget_id, budget_name FROM budget WHERE user_id = ?", (user_id,))
+            cursor.execute("SELECT archived, budget_id, budget_name, closed FROM budget WHERE user_id = ?", (user_id,))
             budgets = cursor.fetchall()
 
             for tuple_item in budgets:
                 archived = tuple_item[0]
                 name = tuple_item[2]
+                closed = tuple_item[3]
                 # print(name)
-                if archived == 'no':
+                if archived == 'no' and closed == 'no':
                     self.budgets.append(name)
                     self.sd.configure(values=self.budgets)
 
@@ -456,7 +464,7 @@ class HomeFrame(CTk.CTkFrame): #(680x480+285+105)
                         budget_id = tuple_item[0]
                         return selected_budget_name, budget_id
             else:
-                messagebox.showerror('Budget Not Select', 'Please select a budget to add a expense in it.')
+                messagebox.showerror('Budget Not Selected', 'Please select a budget to add a expense in it.')
             
         except sqlite3.Error as e:
             messagebox.showerror("SQLite Error", f"{e}")
@@ -594,9 +602,9 @@ class HomeFrame(CTk.CTkFrame): #(680x480+285+105)
 
             values = (budget_id, name, amount, date, time)
 
-            if name != '' and amount != 0 and name != 'Expense Name':
+            if self.checkIDExists(budget_id):
+                if name != '' and amount != 0 and name != 'Expense Name':
             
-                if self.checkIDExists(budget_id):
                     cursor.execute(""" INSERT INTO expense (budget_id, expense_name, expense_amount, date, time) VALUES (?, ?, ?, ?, ?) """, values)
                     conn.commit()
 
@@ -604,8 +612,10 @@ class HomeFrame(CTk.CTkFrame): #(680x480+285+105)
                     self.clearExpenseFields()
                     self.refresh(budget_id) 
 
+                else:
+                    messagebox.showerror('Fields Empty', 'Please enter the name and amount of the expense.')
             else:
-                messagebox.showerror('Fields Empty', 'Please enter the name and amount of the expense.')
+                messagebox.showerror('ID')
 
 
         except sqlite3.Error as e:
@@ -663,13 +673,13 @@ class HomeFrame(CTk.CTkFrame): #(680x480+285+105)
     def fetchExpenses(self, budgetid):
         #__init__
         self.veToplevel = CTk.CTk()
-        self.veToplevel.geometry('510x315+20+20')
+        self.veToplevel.geometry('510x340+20+20')
         self.veToplevel.title("View Expenses")
         self.veToplevel.resizable(False, False)
         self.veToplevel.focus_force()
 
         # print(budgetid)
-
+        #=================================================================================================
         self.frame = CTk.CTkFrame(master=self.veToplevel,
                                                       corner_radius=15,
                                                       height=260,
@@ -713,7 +723,7 @@ class HomeFrame(CTk.CTkFrame): #(680x480+285+105)
         style.map("Treeview.Heading",
                     background=[('active', '#3484F0')])
 
-        #Table Headings
+        
         try:
             conn = sqlite3.connect(DATABASE)
             cursor = conn.cursor()
@@ -787,7 +797,10 @@ class ArchiveFrame(CTk.CTkFrame): #(680x480+285+105)
     def __init__(self, master, width: int, height: int, user_id):
         super().__init__(master, width, height)
 
+        
+        
         self.load_budgetCards(user_id)
+
 
     def load_budgetCards(self, user_id):
         self.user_id = user_id
@@ -808,21 +821,23 @@ class ArchiveFrame(CTk.CTkFrame): #(680x480+285+105)
             cursor.execute("SELECT * FROM budget WHERE user_id=?", (self.user_id, ))
             budgets = cursor.fetchall()
 
+            for child in self.winfo_children():
+                child.destroy()
+
+            archived_budgets_exist = False
+
             if not budgets:
-                for child in self.winfo_children():
-                    # print(self.BsFra.winfo_children())
-                    child.destroy()
+                self.setMessage()
             else:
                 for child in self.winfo_children():
-                    # print(self.BsFra.winfo_children())
                     child.destroy()
                 for i, budget_info in enumerate(budgets):
-                    # print(budget_info)
                     if budget_info:
-                        budget_id, user_id, budget_name, budget_amount, budget_category, budget_status, date, time, expense_limit, archived = budget_info
+                        budget_id, user_id, budget_name, budget_amount, budget_category, budget_status, date, time, expense_limit, archived, closed, close_date, close_time = budget_info
                         
                         # self.budget_card.refreshButton.configure(command=self.refresh(budget_id))
-                        if archived == 'yes':
+                        if archived == 'yes' and closed == 'no':
+                            archived_budgets_exist = True
                             row_num = i // 2  # Two cards per row
                             col_num = i % 2   # 0 or 1 for left or right column
                             
@@ -835,6 +850,9 @@ class ArchiveFrame(CTk.CTkFrame): #(680x480+285+105)
                             self.progressColors(calculation)
                     else:
                         pass  
+
+                if not archived_budgets_exist:
+                    self.setMessage()
                     
             
         except sqlite3.Error as e:
@@ -844,6 +862,13 @@ class ArchiveFrame(CTk.CTkFrame): #(680x480+285+105)
             if conn:
                 conn.close()
 
+    def setMessage(self):
+        self.messageFrame = CTk.CTkFrame(self, width=300, height=100)
+        self.messageFrame.place(x=190, y=190)
+
+        text = CTk.CTkLabel(self.messageFrame, text='You have not Archived \n any Budgets !!!', width=280, height=80, font=('Kameron', 20, 'bold'))
+        text.place(x=10, y=10)
+        
     def set_budget_info(self, budget_id, user_id, budget_category, budget_status):
         self.budget_id = budget_id
         self.user_id = user_id
@@ -1126,6 +1151,144 @@ class ArchiveFrame(CTk.CTkFrame): #(680x480+285+105)
         if result.returncode == 0:
             self.load_budgetCards(self.user_id)
 
+class ClosedFrame(CTk.CTkFrame): #(680x480+285+105)
+    def __init__(self, master, width: int, height: int, user_id):
+        super().__init__(master, width, height)
+
+        self.titleF = CTk.CTkFrame(self, width=660, height=50)
+        self.titleF.place(x=10, y=10)
+
+        self.titleL = CTk.CTkLabel(self.titleF, text='Closed Budgets', width=640, height=30, font=('Kameron', 25, 'bold'))
+        self.titleL.place(x=10, y=10)
+
+        self.FieldNameF = CTk.CTkFrame(self, width=660, height=50)
+        self.FieldNameF.place(x=10, y=70)
+
+        self.recordF = CTk.CTkScrollableFrame(self, width=638, height=330)
+        self.recordF.place(x=10, y=130)
+
+
+        idL = CTk.CTkLabel(self.FieldNameF, text='Budget ID', font=('Kameron', 18, 'bold'), height=30)
+        idL.place(x=20, y=10)
+
+        nameL = CTk.CTkLabel(self.FieldNameF, text='Name', font=('Kameron', 18, 'bold'), height=30)
+        nameL.place(x=180, y=10)
+
+        remBL = CTk.CTkLabel(self.FieldNameF, text='Remaining Budget', font=('Kameron', 18, 'bold'), height=30)
+        remBL.place(x=320, y=10)
+
+        self.loadClosedBudgets(user_id)
+
+    def budRecord(self, master, width: int, height: int, amount, used, name, x, y, budget_id):
+        self.BudgetCard = CTk.CTkFrame(master, width, height)
+        self.BudgetCard.grid(row=x, column=y, padx=10, pady=10)
+
+        image_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "assets")
+
+        remainingBudget = amount - used
+
+        self.id = CTk.CTkLabel(self.BudgetCard, text=budget_id, font=('Kameron', 17), height=30, width=95)
+        self.id.place(x=20, y=10)
+
+        self.name = CTk.CTkLabel(self.BudgetCard, text=name, font=('Kameron', 17), height=30, width=65)
+        self.name.place(x=180, y=10)
+
+        self.amount = CTk.CTkLabel(self.BudgetCard, text=f"${'{:,}'.format(remainingBudget)}", font=('Kameron', 17), height=30, width=165)
+        self.amount.place(x=320, y=10)
+
+        self.reBtn = CTk.CTkButton(self.BudgetCard, text='Re-Open', font=('Kameron', 17), height=30, width=100, command=lambda id=budget_id, name=name: self.reopen(id, name))
+        self.reBtn.place(x=510, y=10)
+
+    def loadClosedBudgets(self, user_id):
+        try:
+            conn = sqlite3.connect(DATABASE)
+            cursor = conn.cursor()
+
+            cursor.execute("SELECT * FROM budget WHERE user_id=? AND closed=?", (user_id, 'yes',))
+            budgets = cursor.fetchall()
+
+            for child in self.recordF.winfo_children():
+                child.destroy()
+
+            if budgets:
+                yCor = 10
+                for i, budget in enumerate(budgets):
+                    budget_id, buser_id, budget_name, budget_amount, budget_category, budget_status, date, time, expense_limit, archived, closed, close_date, close_time = budget
+                    
+                    row_num = i // 1  # One cards per row
+                    col_num = i % 1   # 0 or 1 for left or right column
+
+                    self.budRecord(self.recordF, 620, 50, budget_amount, budget_status, budget_name, row_num, col_num, budget_id)
+                    yCor += 60
+
+
+        except sqlite3.Error as e:
+            messagebox.showerror("SQLite Error (loadBudgetCards)", f"{e}")
+
+        finally:
+            if conn:
+                conn.close()
+
+    def reopen(self, budget_id, budName):
+        with open(JSON_FILE, 'r') as file:
+            data = json.load(file)
+    
+        user_id =  data['user_id']
+        try:
+            conn = sqlite3.connect(DATABASE)
+            cursor = conn.cursor()
+
+            setQuery = "UPDATE budget SET closed=? WHERE budget_id=?"
+            valuesSQ = ('no', budget_id, )
+
+            cursor.execute(setQuery, valuesSQ)
+            conn.commit()
+            self.genUserTotal()
+            messagebox.showinfo('Budget Re-opened', f'{budName} has been RE-OPENED.')
+
+            self.loadClosedBudgets(user_id)
+
+        except sqlite3.Error as e:
+            messagebox.showerror("SQLite Error", f"{e}")
+
+        finally:
+            if conn:
+                conn.close()
+
+    def genUserTotal(self):
+        try:
+            conn = sqlite3.connect(DATABASE)
+            cursor = conn.cursor()
+
+            user_totals = {}
+
+            cursor.execute("SELECT DISTINCT user_id FROM budget")
+            unique_user_ids = [row[0] for row in cursor.fetchall()]
+
+            for user_id in unique_user_ids:
+                cursor.execute("SELECT budget_id FROM budget WHERE user_id = ? AND closed = 'yes'", (user_id,))
+                closed_budgets = [row[0] for row in cursor.fetchall()]
+
+                total = 0
+                for budget_id in closed_budgets:
+                    cursor.execute("SELECT budget_amount, budget_status FROM budget WHERE budget_id = ?", (budget_id,))
+                    row = cursor.fetchone()
+                    if row:
+                        total += row[0] - row[1]
+
+                user_totals[user_id] = total
+
+            with open(UTJSON_FILE, 'w') as json_file:
+                json.dump(user_totals, json_file, indent=4)
+
+
+        except sqlite3.Error as e:
+            messagebox.showerror("SQLite Error", f"{e}")
+
+        finally:
+            if conn:
+                conn.close()
+
 # Main Page
 class MainPage(CTk.CTk): #toplevel
     def __init__(self):
@@ -1143,12 +1306,23 @@ class MainPage(CTk.CTk): #toplevel
         self.user_id = data['user_id']
         #-----------------------------------
 
+        image_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "assets")
+
+        profile_light = Image.open(os.path.join(image_path, "user_light.png"))
+        profile_dark = Image.open(os.path.join(image_path, "user_dark.png"))
+
+        self.profileImg = CTk.CTkImage(light_image=profile_light, dark_image=profile_dark, size=(30, 30))
+
+
         # Title
         titleFrame = CTk.CTkFrame(self, width=1290, height=70)
         titleFrame.place(x=20, y=20)
 
         self.title = CTk.CTkLabel(titleFrame, text='Spend Wise', font=('Kameron', 40), width=1250, height=70, justify='center')
         self.title.place(x=20, y=0)
+
+        self.profile_btn = CTk.CTkButton(titleFrame, width=50, height=50, border_spacing=10, font=('Kameron', 20,), text="", fg_color="transparent", text_color=("gray10", "gray90"), hover_color=("gray70", "gray30"), anchor="w", command=lambda: self.button_pressed_callback("profile"), image=self.profileImg)
+        self.profile_btn.place(x=1225, y=9)
 
         # Navigation Frame (250x480+20+105)
         self.navFrame = NavigationFrame(self, 250, 480, self.button_pressed_callback)
@@ -1158,6 +1332,7 @@ class MainPage(CTk.CTk): #toplevel
         self.homeFrame = HomeFrame(self, 680, 480, self.user_id)
         self.profileFrame = ProfileFrame(self, 680, 480)
         self.settingsFrame = SettingsFrame(self, 680, 480)
+        self.closedFrame = ClosedFrame(self, 680, 480, self.user_id)
         self.archiveFrame = ArchiveFrame(self, 680, 480, self.user_id)
 
         # Calculator Frame (330+480+980+105)
@@ -1174,14 +1349,17 @@ class MainPage(CTk.CTk): #toplevel
     def button_pressed_callback(self, button_name):
 
         homeButton = self.navFrame.home_btn
-        profileButton = self.navFrame.profile_btn
+        profileButton = self.profile_btn
         settingsButton = self.navFrame.settings_btn
         archiveButton = self.navFrame.archieve_btn
+        closedButton = self.navFrame.close_btn
+        
 
         homeButton.configure(fg_color=("gray75", "gray25") if button_name == "home" else "transparent")
         profileButton.configure(fg_color=("gray75", "gray25") if button_name == "profile" else "transparent")
         settingsButton.configure(fg_color=("gray75", "gray25") if button_name == "settings" else "transparent")
         archiveButton.configure(fg_color=("gray75", "gray25") if button_name == "archive" else "transparent")
+        closedButton.configure(fg_color=("gray75", "gray25") if button_name == "closed" else "transparent")
 
         if button_name == "home":
             self.homeFrame.place(x=285, y=105)
@@ -1198,12 +1376,24 @@ class MainPage(CTk.CTk): #toplevel
             self.settingsFrame.place(x=285, y=105)
         else:
             self.settingsFrame.place_forget()
+            self.archiveFrame.load_budgetCards(self.user_id)
+            self.closedFrame.loadClosedBudgets(self.user_id)
 
         if button_name == "archive":
             self.archiveFrame.place(x=285, y=105)
             self.archiveFrame.load_budgetCards(self.user_id)
         else:
             self.archiveFrame.place_forget()
+            self.archiveFrame.configure(width=680, height=480)
+            self.archiveFrame.setMessage()
+
+
+        if button_name == "closed":
+            self.closedFrame.place(x=285, y=105)
+            self.closedFrame.loadClosedBudgets(self.user_id)
+        else:
+            self.closedFrame.place_forget()
+            self.closedFrame.loadClosedBudgets(self.user_id)
 
 if __name__ == '__main__':
     app = MainPage()

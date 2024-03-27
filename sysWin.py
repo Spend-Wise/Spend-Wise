@@ -18,6 +18,7 @@ load_dotenv()
 DATABASE = os.environ.get("DATABASE")
 JSON_FILE = os.environ.get("JSON_FILE")
 CDJSON_FILE = os.environ.get("CURRENT_DATA_JSON_FILE")
+UTJSON_FILE = os.environ.get("USER_TOTAL_JSON_FILE")
 
 class Win(CTk):
     def __init__(self):
@@ -66,8 +67,8 @@ class Win(CTk):
         
         #====================================================================================
         # titleFrame Widgets
-        self.title = CTkLabel(self.titleFrame, width=945, height=50, text='Budget Settings', font=('Kameron', 25, 'bold'))
-        self.title.place(x=5, y=0)
+        self.titleWin = CTkLabel(self.titleFrame, width=945, height=50, text='Budget Settings', font=('Kameron', 25, 'bold'))
+        self.titleWin.place(x=5, y=0)
 
         #====================================================================================
         # budgetDetailsFrame Widgets
@@ -80,8 +81,8 @@ class Win(CTk):
         self.namel = CTkLabel(self.budgetDetailsFrame, text='----', font=('Kameron', 18, 'bold'), width=280, justify='center')
         self.namel.place(x=175, y=35)
 
-        # self.ednm = CTkButton(self.budgetDetailsFrame, width=30, text='', image=self.editImg, command=self.editBudName)
-        # self.ednm.place(x=425, y=35)
+        self.ednm = CTkButton(self.budgetDetailsFrame, width=30, text='', image=self.editImg, command=self.editBudName)
+        self.ednm.place(x=425, y=35)
 
         self.dt_label = CTkLabel(self.budgetDetailsFrame, text=f'Date & Time: ', font=('Kameron', 18, 'bold'))
         self.dt_label.place(x=10, y=65)
@@ -213,11 +214,11 @@ class Win(CTk):
         self.expBtn = CTkButton(self.shareExportFrame, text='Export Budget', font=('Kameron', 18, 'bold'), width=450, command=self.exportBudget)
         self.expBtn.place(x=10, y=85)
 
-        self.shaBtn = CTkButton(self.shareExportFrame, text='Share Budget', font=('Kameron', 18, 'bold'), width=450)
-        self.shaBtn.place(x=10, y=125)
+        self.clBtn = CTkButton(self.shareExportFrame, text='Close Budget', font=('Kameron', 18, 'bold'), width=450, fg_color='#8d1f1f', hover_color='#6e1717', command=lambda budget_id=self.getBudgetID(): self.closeBudget(budget_id) )
+        self.clBtn.place(x=10, y=165)
 
         self.archBtn = CTkButton(self.shareExportFrame, text='Archive Budget', font=('Kameron', 18, 'bold'), width=450, fg_color='#1f8d3b', hover_color='#155c21', command=lambda budget_id=self.getBudgetID(): self.archive(budget_id) )
-        self.archBtn.place(x=10, y=165)
+        self.archBtn.place(x=10, y=125)
 
         # Funciton Calls
         self.setData()
@@ -236,6 +237,7 @@ class Win(CTk):
     def setData(self):
         budget_id = self.getBudgetID()
         self.setArchive(budget_id)
+        self.setClose(budget_id)
         try:
             conn = sqlite3.connect(DATABASE)
             cursor = conn.cursor()
@@ -251,7 +253,7 @@ class Win(CTk):
             dataGQ = cursor.fetchone()
 
             if dataGQ:
-                budgetid, user_id, name, amount, category, used, date, time, expLimit, arch = dataGQ
+                budgetid, user_id, name, amount, category, used, date, time, expLimit, arch, close, closeDate, closeTime = dataGQ
 
                 dateTime = f"{date}  -  {time}"
                 remainingBudget = amount - used
@@ -264,7 +266,7 @@ class Win(CTk):
 
                 self.cell.configure(text=f"${'{:,}'.format(expLimit)}")
 
-                self.setBudJSON(budgetid, user_id, name, amount, category, used, date, time, expLimit, arch)
+                self.setBudJSON(budgetid, user_id, name, amount, category, used, date, time, expLimit, arch, close, closeDate, closeTime)
                 #-------------------------------------------------------------------------------------
 
                 ExpQuery = 'SELECT * FROM expense WHERE budget_id = ? ORDER BY date DESC, time DESC LIMIT 1'
@@ -296,7 +298,7 @@ class Win(CTk):
             if conn:
                 conn.close()
 
-    def setBudJSON(self, budget_id, user_id, budName, budAmo, budCat, budUsed, budDate, budTime, budEL, budArch):
+    def setBudJSON(self, budget_id, user_id, budName, budAmo, budCat, budUsed, budDate, budTime, budEL, budArch, budClo, cloDate, cloTime):
         with open(CDJSON_FILE, 'r') as file:
             data = json.load(file)
             
@@ -310,6 +312,9 @@ class Win(CTk):
         data['budget']['time'] = budTime
         data['budget']['expense_limit'] = budEL
         data['budget']['archived'] = budArch
+        data['budget']['closed'] = budClo
+        data['budget']['close_date'] = cloDate
+        data['budget']['close_time'] = cloTime
         
         with open(CDJSON_FILE, 'w') as file:
             json.dump(data, file)
@@ -571,6 +576,131 @@ class Win(CTk):
             if conn:
                 conn.close()
 
+    def closeBudget(self, budget_id):
+        archY = 'yes'
+        archN = 'no'
+        try:
+            conn = sqlite3.connect(DATABASE)
+            cursor = conn.cursor()
+
+            getQuery = "SELECT closed, budget_name FROM budget WHERE budget_id=?"
+            valuesGQ = (budget_id, )
+
+            cursor.execute(getQuery, valuesGQ)
+            data = cursor.fetchone()
+
+            if data:
+                closed, budName = data
+
+                if closed == 'no':
+                    setQuery = "UPDATE budget SET closed=? WHERE budget_id=?"
+                    valuesSQ = (archY, budget_id, )
+
+                    cursor.execute(setQuery, valuesSQ)
+                    conn.commit()
+
+                    self.genUserTotal()
+
+                    with open(CDJSON_FILE, 'r') as file:
+                        data = json.load(file)
+                    
+                    data['budget']['closed'] = 'yes'
+                    
+                    with open(CDJSON_FILE, 'w') as file:
+                        json.dump(data, file)
+
+                    messagebox.showinfo('Budget CLosed', f'{budName} has been CLOSED. To see the closed budgets please click on the Closed Budgets Tab in the navigation menu.')
+                    self.clBtn.configure(text='Re-open Budget')
+                    sys.exit()
+
+                else:
+                    setQuery = "UPDATE budget SET closed=? WHERE budget_id=?"
+                    valuesSQ = (archN, budget_id, )
+
+                    with open(CDJSON_FILE, 'r') as file:
+                        data = json.load(file)
+                    
+                    data['budget']['closed'] = 'no'
+                    
+                    with open(CDJSON_FILE, 'w') as file:
+                        json.dump(data, file)
+
+                    cursor.execute(setQuery, valuesSQ)
+                    conn.commit()
+                    self.genUserTotal()
+                    messagebox.showinfo('Budget Re-opened', f'{budName} has been RE-OPENED.')
+                    self.clBtn.configure(text='Close Budget')
+                    sys.exit()
+
+        except sqlite3.Error as e:
+            messagebox.showerror("SQLite Error", f"{e}")
+
+        finally:
+            if conn:
+                conn.close()
+
+    def setClose(self, budget_id):
+        try:
+            conn = sqlite3.connect(DATABASE)
+            cursor = conn.cursor()
+
+            getQuery = "SELECT closed, budget_name FROM budget WHERE budget_id=?"
+            valuesGQ = (budget_id, )
+
+            cursor.execute(getQuery, valuesGQ)
+            data = cursor.fetchone()
+
+            if data:
+                closed, budName = data
+
+                if closed == 'no':
+                    self.clBtn.configure(text='Close Budget')
+
+                else:
+                    self.clBtn.configure(text='Re-open Budget')
+            
+
+        except sqlite3.Error as e:
+            messagebox.showerror("SQLite Error", f"{e}")
+
+        finally:
+            if conn:
+                conn.close()
+
+    def genUserTotal(self):
+        try:
+            conn = sqlite3.connect(DATABASE)
+            cursor = conn.cursor()
+
+            user_totals = {}
+
+            cursor.execute("SELECT DISTINCT user_id FROM budget")
+            unique_user_ids = [row[0] for row in cursor.fetchall()]
+
+            for user_id in unique_user_ids:
+                cursor.execute("SELECT budget_id FROM budget WHERE user_id = ? AND closed = 'yes'", (user_id,))
+                closed_budgets = [row[0] for row in cursor.fetchall()]
+
+                total = 0
+                for budget_id in closed_budgets:
+                    cursor.execute("SELECT budget_amount, budget_status FROM budget WHERE budget_id = ?", (budget_id,))
+                    row = cursor.fetchone()
+                    if row:
+                        total += row[0] - row[1]
+
+                user_totals[user_id] = total
+
+            with open(UTJSON_FILE, 'w') as json_file:
+                json.dump(user_totals, json_file, indent=4)
+
+
+        except sqlite3.Error as e:
+            messagebox.showerror("SQLite Error", f"{e}")
+
+        finally:
+            if conn:
+                conn.close()
+
     def add_zero(self, number):
         if len(str(number).split('.')[0]) == 1:
             return "0" + str(number)
@@ -715,40 +845,40 @@ class Win(CTk):
 
         # Close connection to the database
         conn.close()
-
-    # def editBudName(self):
-    #     budget_id = self.getBudgetID()
         
-    #     dialog = CTkInputDialog(text="Type the New Budget Name:", title="Edit Budget Name", font=('Kameron', 20, 'bold'))
-    #     newName = dialog.get_input()
+    def editBudName(self):
+        budget_id = self.getBudgetID()
+        
+        dialog = CTkInputDialog(text="Type the New Budget Name:", title="Edit Budget Name", font=('Kameron', 20, 'bold'))
+        newName = dialog.get_input()
 
-    #     if newName == '':
-    #         messagebox.showerror('Invalid Input', 'Please enter a Valid Name')
+        if newName == '':
+            messagebox.showerror('Invalid Input', 'Please enter a Valid Name')
 
-    #     try:
-    #         conn = sqlite3.connect(DATABASE)
-    #         cursor = conn.cursor()
+        try:
+            conn = sqlite3.connect(DATABASE)
+            cursor = conn.cursor()
 
-    #         update_query = """
-    #         UPDATE budget
-    #         SET budget_name = ?
-    #         WHERE budget_id = ?;
-    #         """
-    #         values = (newName, budget_id, )
-    #         cursor.execute(update_query, values)
+            update_query = """
+            UPDATE budget
+            SET budget_name = ?
+            WHERE budget_id = ?;
+            """
+            values = (newName, budget_id, )
+            cursor.execute(update_query, values)
 
-    #         conn.commit()
-    #         messagebox.showinfo("Budget Name Updated", f"Budget Name updated to {newName}")
+            conn.commit()
+            messagebox.showinfo("Budget Name Updated", f"Budget Name updated to {newName}")
 
-    #         # Update the displayed email in the GUI
-    #         self.nameLabel.configure(text=newName)
+            # Update the displayed email in the GUI
+            self.namel.configure(text=newName)
 
-    #     except sqlite3.Error as e:
-    #         messagebox.showerror("SQLite Error", f"{e}")
+        except sqlite3.Error as e:
+            messagebox.showerror("SQLite Error", f"{e}")
 
-    #     finally:
-    #         if conn:
-    #             conn.close()
+        finally:
+            if conn:
+                conn.close()
 
 
 if __name__ == '__main__':

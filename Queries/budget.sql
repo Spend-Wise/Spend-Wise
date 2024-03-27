@@ -9,6 +9,9 @@ CREATE TABLE "budget" (
 	"time"	TEXT,
 	"expense_limit"	INTEGER NOT NULL,
 	"archived"	TEXT NOT NULL DEFAULT 'no',
-	PRIMARY KEY("budget_id" AUTOINCREMENT),
-	FOREIGN KEY("user_id") REFERENCES "registration"("user_id")
+	"closed"	TEXT NOT NULL DEFAULT 'no',
+	"close_date"	TEXT,
+	"close_time"	TEXT,
+	FOREIGN KEY("user_id") REFERENCES "registration"("user_id"),
+	PRIMARY KEY("budget_id" AUTOINCREMENT)
 );
