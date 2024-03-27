@@ -8,7 +8,6 @@ import sqlite3
 
 from tkinter import *
 from CTkScrollableDropdown import *
-from CTkXYFrame import *
 
 from PIL import Image
 from dotenv import load_dotenv
