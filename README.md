@@ -17,6 +17,12 @@
 - Delete Budget
 - Integrated Database Structure Ensuring System (Press CTRL + E on the startPage)
 ---
+## DOCUMENTATION
+Check Out the Spend Wise Doumentation(Coming Soon)
+---
+## WIKI
+Check Out the Spend Wise WIKI here (Coming Soon)
+---
 ## DOWNLOAD
 
 ### <p align='center'> EXE File <br> <p align='center'> [<img src="https://img.shields.io/badge/FREE-DOWNLOAD-informational?&logo=Microsoft&logoColor=blue&color=007ec6" width="300">](https://github.com/devDurgeshK/Spend-Wise/releases/download/v1.4.2/SpendWise.zip)  <p align='center'>
