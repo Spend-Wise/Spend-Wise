@@ -239,22 +239,24 @@ class LoginPage(CTk.CTk):
                 conn.close()
 
     def forgot_password(self):
-
-        user_id = self.current_user_id
-
+        username = self.getData()
         try:
             conn = sqlite3.connect(DATABASE)
             cursor = conn.cursor()
 
             query = f"SELECT user_id, sqa_tog, first_name FROM registration WHERE username=?"
-            cursor.execute(query, (self.username,))
+            cursor.execute(query, (str(self.username),))
             user_data = cursor.fetchone()
 
             if user_data:
                 user_id, sqa_tog, first_name = user_data
                 # print(sqa_tog)
-                self.SecurityQuestion(user_id) if sqa_tog == "on" else self.OTPVerification(user_id) if sqa_tog == "off" else None
-
+                if sqa_tog == 'on':
+                    self.SecurityQuestion(user_id)
+                else:
+                    self.OTPVerification(user_id)
+                # self.SecurityQuestion(user_id) if sqa_tog == "on" else self.OTPVerification(user_id) if sqa_tog == "off" else None
+                print('opened')
             else:
                 messagebox.showerror("User ID", "To change the password please atleast enter the USER ID.")
 

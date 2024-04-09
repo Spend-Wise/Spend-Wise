@@ -1,9 +1,13 @@
 import os
+import time
+import shutil
 import sqlite3
+
+from tkinter import messagebox
 
 def create_tables_from_sql_files(db_file, sql_folder):
     if not os.path.exists(sql_folder):
-        raise FileNotFoundError(f"The SQL folder '{sql_folder}' does not exist.")
+        messagebox.showerror('File Not Found Error', f'The SQL folder "{sql_folder}" does not exist.')
     else:
         if not os.path.exists(db_file):
             # If database doesn't exist, create it
@@ -58,7 +62,7 @@ def ensure_database_structure(db_file :str, sql_folder :str, required_tables: tu
 
     # Check if SQL folder exists
     if not os.path.exists(sql_folder):
-        raise FileNotFoundError(f"The SQL folder '{sql_folder}' does not exist.")
+        messagebox.showerror('File Not Found Error', f'The SQL folder "{sql_folder}" does not exist.')
 
     # Create missing tables from SQL files
     create_tables_from_sql_files(db_file, sql_folder)
@@ -72,5 +76,39 @@ def ensure_database_structure(db_file :str, sql_folder :str, required_tables: tu
 
     # Return True if all required tables exist, otherwise False
     return set(required_tables).issubset(existing_tables)
+
+def backupDatabase(db_file: str, backup_folder: str):
+    if not os.path.exists(backup_folder):
+        os.makedirs(backup_folder)
+    
+    # Check for existing backup files and delete them
+    existing_backups = [f for f in os.listdir(backup_folder) if f.endswith('.bak')]
+    if existing_backups:
+        for backup_file in existing_backups:
+            os.remove(os.path.join(backup_folder, backup_file))
+        # print(f"Existing backup files deleted successfully.")
+
+    # Create new backup
+    backup_file = os.path.join(backup_folder, f"{os.path.basename(db_file)}.bak")
+    
+    try:
+        shutil.copy2(db_file, backup_file)
+        # Get the current time
+        current_time = time.time()
+        # Set the modification time of the backup file
+        os.utime(backup_file, (current_time, current_time))
+        # print(f"Backup created successfully: {backup_file}")
+    except IOError as e:
+        messagebox.showerror('IOError', f'{e}')
+
+def restoreDatabase(backup_file: str, db_file: str):
+    try:
+        shutil.move(backup_file, db_file)
+        # Get the current time
+        current_time = time.time()
+        # Set the modification time of the restored database file
+        os.utime(db_file, (current_time, current_time))
+    except IOError as e:
+        messagebox.showerror('IOError', f'{e}')
 
 
