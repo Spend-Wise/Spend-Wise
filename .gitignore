@@ -1,6 +1,8 @@
-/Backups
+/backups
 /OIF
 /Tests
+/output
+/export
 /__pycache__
 /CTkScrollableDropdown/__pycache__
 .gitignore
