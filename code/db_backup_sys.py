@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from PIL import Image
 
 from database_utils import restoreDatabase
+from datetime import datetime
 
 from customtkinter import *
 from tkinter import ttk, messagebox
@@ -17,6 +18,7 @@ load_dotenv()
 
 DATABASE = os.environ.get("DATABASE")
 BACKUP_FOLDER = os.environ.get("DATABASE_BACKUP_FOLDER_AUTO")
+BACKUP_FILE = os.environ.get("BACKUP_FILE")
 
 class DBBackup(CTk):
     def __init__(self):
@@ -88,6 +90,8 @@ class DBBackup(CTk):
         self.note = CTkLabel(auto, font=('Kameron', 15, 'bold'), width=355, wraplength=355, text=self.noteText)
         self.note.place(x=65, y=210)
 
+        self.setInfo()
+
     def loadBackup(self):
         backupfile = os.path.join(BACKUP_FOLDER, 'spendwise.db.bak')
 
@@ -103,6 +107,39 @@ class DBBackup(CTk):
             subprocess.Popen(["open", folder_path])
         else:  # Linux
             subprocess.Popen(["xdg-open", folder_path])
+
+    def get_file_info(self, file_path):
+        file_name = os.path.basename(file_path)
+
+    # Getting file creation time
+        creation_time = os.path.getctime(file_path)
+        creation_time = datetime.fromtimestamp(creation_time)
+        
+        # Getting file modification time
+        modification_time = os.path.getmtime(file_path)
+        modification_time = datetime.fromtimestamp(modification_time)
+        
+        # Extracting date and time separately
+        creation_date = creation_time.date()
+        creation_time = creation_time.time()
+        
+        modification_date = modification_time.date()
+        modification_time = modification_time.time()
+
+        modification_time = modification_time.replace(microsecond=0)
+    
+        return file_name, creation_date, creation_time, modification_date, modification_time
+
+
+    def setInfo(self):
+        file_name, creation_date, creation_time, modification_date, modification_time = self.get_file_info(f'backup/database/auto/{BACKUP_FILE}')
+
+        self.fileName.configure(text=file_name)
+        self.fileDate.configure(text=creation_date)
+        self.fileTime.configure(text=modification_time)
+
+        CTkToolTip(self.fileName, f'FILE PATH :- backup/database/auto/{BACKUP_FILE}\n\nTo view the backup file click on "View Backup File" button.', border_width=2, wraplength=250)
+
 
     
 

@@ -1,0 +1,73 @@
+{
+    "budget": {
+        "budget_id": 4,
+        "user_id": 3,
+        "budget_name": "bud 1",
+        "budget_amount": 90200,
+        "budget_category": null,
+        "budget_status": 78000,
+        "date": "27/4/2024",
+        "time": "14:34:3",
+        "expense_limit": 10,
+        "archived": "no",
+        "closed": "no",
+        "close_date": null,
+        "close_time": null
+    },
+    "expenses": [
+        {
+            "expense_id": 4,
+            "budget_id": 4,
+            "expense_name": "wd",
+            "expense_amount": 10000,
+            "expense_category": null,
+            "date": "27/4/2024",
+            "time": "14:34:38"
+        },
+        {
+            "expense_id": 5,
+            "budget_id": 4,
+            "expense_name": "ddd",
+            "expense_amount": 500,
+            "expense_category": null,
+            "date": "27/4/2024",
+            "time": "14:35:16"
+        },
+        {
+            "expense_id": 6,
+            "budget_id": 4,
+            "expense_name": "durb",
+            "expense_amount": 30000,
+            "expense_category": null,
+            "date": "27/4/2024",
+            "time": "14:36:0"
+        },
+        {
+            "expense_id": 7,
+            "budget_id": 4,
+            "expense_name": "dur",
+            "expense_amount": 8000,
+            "expense_category": null,
+            "date": "27/4/2024",
+            "time": "14:36:17"
+        },
+        {
+            "expense_id": 8,
+            "budget_id": 4,
+            "expense_name": "dcdc",
+            "expense_amount": 20000,
+            "expense_category": null,
+            "date": "27/4/2024",
+            "time": "14:37:5"
+        },
+        {
+            "expense_id": 9,
+            "budget_id": 4,
+            "expense_name": "dfff",
+            "expense_amount": 9500,
+            "expense_category": null,
+            "date": "27/4/2024",
+            "time": "14:37:43"
+        }
+    ]
+}
