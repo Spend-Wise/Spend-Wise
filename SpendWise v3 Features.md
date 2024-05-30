@@ -37,13 +37,6 @@
     - The username of the user who imported the database from the backup file.
     - The remark for importing the database from the backup file.
 
-- Retool Database Transition
-  - Transition completely to the RETOOL database. All the tables and all the utilities that are related to the database
-    - Database Structure Ensuring System
-    - Automatic Database Backup System
-    - User Database Backup System
-  - Rename the REGISTRATION table to the USERS table..
-
 - USER Backup System
   - Option to backup specific budgets or the selected budgets created by the user.
   - Option should be available in the PROFILE menu
@@ -57,11 +50,6 @@
 - Database Utilities
   - All the Database Utilities only should show up only when the user is logged in with the USER TYPE of ADMIN.
   - User with the USER TYPE user should not be able to open these Database Utilities
-
-- Centralized Queries
-  - There should not be queries created in the main code file.
-  - There should be a separate file for all the SQL queries that are used in the whole code.
-  - And all the queries should be imported from this file to the file where that query is needed.
 
 - Appearance
   - Option of changing the appearance of the application should be available in the PROFILE menu.
